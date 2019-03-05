@@ -1,6 +1,30 @@
-def photometry(header, data, name, im, thresh_factor):
-    # Added the thresh_factor to make function more useful. Argument im is currently not used.    
-    #Estimates background in the picture
+def photometry(header, data, name, thresh_factor):
+    """
+    Input: the header of a reduced object's .fits file, the image data of the file, the name 
+    to be used when creating the segmented image and a csv containing all detected sources, and a 
+    threshold factor to be used in image segmentation. 
+    Output: None
+    
+    Obtains a stack of images in the form of a header and data from a .fits file. Estimates the background photon count of this 
+    image. Sets a threshold above which we declare a cluster of pixels to be a source: this threshold is defined as 
+    the background + the input thresh_factor*the RMS deviation of the background. 
+    [Should go into more detail here, or in the README.md]
+    
+    Scans the input image and looks for sources which are at least 7 pixels in area and above this threshold. Saves an image 
+    to of the sources found in the original field to the working directory. Uses a pixel coordinate to WCS coordinate 
+    transformation, via a previously known reference pixel (see PESTO_lib.WCS_preparation()) to obtain WCS coords of all 
+    detected sources. Outputs a .csv containing the properties of all detected sources.
+    
+    A tab-delimited file, results.txt, is appended to. The number of images used in the stack, the total exposure 
+    time of the stack, [some other parameter], the timestamp (averaged across all images) and the error on the in this script), 
+    scans the output .csv for a particular source. 
+    
+    If a source is found, the resuts.txt file is appended with the pixel coordinates of its x and y minimum, 
+    the pixel area of the source, the photon count, and the error on the photon count. If no source is found, the 
+    flag NO SOURCE FOUND is appended to results.txt. 
+    """
+       
+    # Estimates background in the picture
     from astropy.io import fits
     from astropy.stats import SigmaClip
     from photutils import Background2D, MedianBackground
@@ -11,7 +35,7 @@ def photometry(header, data, name, im, thresh_factor):
     mask = (data == 0) 
     bkg = Background2D(data, (50,50), filter_size=(3,3), sigma_clip=sigma_clip, bkg_estimator=bkg_estimator, mask=mask)
 
-    #Finds sources using image segmentation
+    # Find sources using image segmentation
     threshold = bkg.background + (thresh_factor*bkg.background_rms) #originally 5.0
     from astropy.convolution import Gaussian2DKernel
     from astropy.stats import gaussian_fwhm_to_sigma
@@ -26,7 +50,6 @@ def photometry(header, data, name, im, thresh_factor):
     except: 
         print("The background threshold factor is too large; sources are being ignored during image segmentation.\nPlease try a smaller value.\n")
         return
-   
  
     #Pictures to see what's going on
     if(im):
@@ -42,12 +65,11 @@ def photometry(header, data, name, im, thresh_factor):
         ax2.imshow(segm, origin='lower', cmap=segm.cmap(random_state=12345)) 
         plt.savefig('segmentationtest_'+name+'.png')
     
-
-    #Find source properties and convert their position to WCS
+    # Find source properties and convert their position to WCS
     from photutils import source_properties
     from astropy.wcs import WCS
     
-    #calculate the error on the photon count first before building table
+    # Calculate the error on the photon count first before building table
     tf = open('/data/irulan/omm_transients/results.txt','r')
     contents = tf.readlines()
     tf.close()
@@ -58,16 +80,13 @@ def photometry(header, data, name, im, thresh_factor):
     
     cat = source_properties(data-bkg.background, segm, wcs='all_pix2world', error=error)
     tbl = cat.to_table()
-
-    pix_x = tbl['xcentroid'].value
-    pix_y = tbl['ycentroid'].value
     
     #print("\n\nThe pixel coords of the sources found:\n",tbl['xcentroid'],tbl['ycentroid'])   # Print the pixel coords of the sources
     coord = WCS(header)
 
     #print("\n\nThe WCS parameters to be used in WCS conversion:",coord)                      # Print WCS objects's qualities
     xposition, yposition = coord.all_pix2world(tbl['xcentroid'], tbl['ycentroid'],1)
-    #print("\n\nThe converted WCS coords:\n",xposition,yposition)                              # Print the converted WCS coords
+    #print("\n\nThe converted WCS coords:\n",xposition,yposition)                             # Print the converted WCS coords
     tbl['xcentroid'] = xposition
     tbl['ycentroid'] = yposition
     tbl.write('source_table_'+name+'.csv', format = 'csv', overwrite=True)
@@ -117,13 +136,13 @@ def photometry(header, data, name, im, thresh_factor):
             pc_err = csv_file.iloc[i,6] 
             area = csv_file.iloc[i,20]
             line = str(x_min)+"\t"+str(y_min)+"\t"+str(area)+"\t"+str(pc)+"\t"+str(pc_err)+"\n" # write everything
-            #line = str(pc)+"\t"+str(pc_err)+"\n"                                           # write the essentials
+            #line = str(pc)+"\t"+str(pc_err)+"\n"                                               # write the essentials
             tf = open('/data/irulan/omm_transients/results.txt','a')
             tf.write(line)
             tf.close()
             return None
 
-    # if no MAXI is found
+    # if no source is found
     line = "NO SOURCE FOUND.\n" 
     print("No source found.\n")
     print("\a") # make a beep to alert the user 
