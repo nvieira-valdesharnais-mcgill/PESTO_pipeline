@@ -424,11 +424,12 @@ class reduced_PESTO_data(PESTO_data):
 
              hdu_temp.writeto(self.loc[0]+'/'+self.name+'/'+f,'warn',overwrite=True) 
 
-     def photometry(self,image_produced, thresh_factor):     # Added the threshold factor
+     def photometry(self,thresh_factor,RA_bounds,DEC_bounds):     # Added the threshold factor
         """
-        Input: a string to be used in naming the image (not currently used) created by photometry and a threshold factor
-        to be used in selecting what amount of background to ignore during image segmentation. 
-        Example input: reduced_dataset.photometry('output',1.5)
+        Input: a threshold factor to be used in selecting what amount of background to ignore during 
+        image segmentation and 2 arrays denoting the RA and DEC boundaries (in degrees) of the source 
+        we wish to detect. 
+        Example input: reduced_dataset.photometry(1.5, [275.1, 276.2], [7.10, 7.18])
         Produces a segmented image and a .csv with source properties (see apeturephotometry.py for more)
         """
         import aperturephotometry
@@ -438,7 +439,7 @@ class reduced_PESTO_data(PESTO_data):
              hdu_temp.header['EPOCH'] = float(hdu_temp.header['EPOCH']) # EPOCH needs to be a float   
              hdu_temp.writeto(self.loc[0]+'/'+self.name+'/'+f,'warn',overwrite=True) 
              hdu = fits.open(self.loc[0]+'/'+self.name+'/'+f)    
-             aperturephotometry.photometry(hdu[0].header,hdu[0].data,f.replace('.fits', ''),image_produced,thresh_factor)
+             aperturephotometry.photometry(hdu[0].header,hdu[0].data,f.replace('.fits', ''),thresh_factor,RA_bounds, DEC_bounds)
 
 ########################
 
