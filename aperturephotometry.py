@@ -1,8 +1,9 @@
-def photometry(header, data, name, thresh_factor):
+def photometry(header, data, name, thresh_factor, RA_bound, DEC_bound):
     """
     Input: the header of a reduced object's .fits file, the image data of the file, the name 
-    to be used when creating the segmented image and a csv containing all detected sources, and a 
-    threshold factor to be used in image segmentation. 
+    to be used when creating the segmented image and a csv containing all detected sources, a 
+    threshold factor to be used in image segmentation, and 2 arrays giving the RA and DEC (in degrees)
+    boundaries on the desired source.
     Output: None
     
     Obtains a stack of images in the form of a header and data from a .fits file. Estimates the background photon count of this 
@@ -91,40 +92,19 @@ def photometry(header, data, name, thresh_factor):
     tbl['ycentroid'] = yposition
     tbl.write('source_table_'+name+'.csv', format = 'csv', overwrite=True)
 
-    maxi_RA_min = 275.085 # minimum RA we will allow for MAXI
-    maxi_RA_max = 275.097 # maximum RA we will allow for MAXI
-    maxi_DEC_min = 7.1849 # minimum DEC we will allow for MAXI
-    maxi_DEC_max = 7.1860 # maximum DEC we will allow for MAXI
-
-    # This source worked for both, so leaving it in
-    # Source 3 in Nick's finderchart, used with threshfactor 3
-    #RA_min = 275.08 # minimum RA for alternate source
-    #RA_max = 275.09 # maximum RA for alternate source
-    #DEC_min = 7.180 # minimum DEC
-    #DEC_max = 7.184 # maximum DEC
-    
-    # Source 1 (ref pix) in Nick's finderchart, used with threshfactor 2
-    # Worked in July
-    RA_min = 275.128
-    RA_max = 275.138
-    DEC_min = 7.1398
-    DEC_max = 7.1410
-
-    # Source 2 in Nick's finderchart, used with threshfactor 2   
-    #Worked in July
-    #RA_min = 275.1098
-    #RA_max = 275.1106
-    #DEC_min = 7.1655
-    #DEC_max = 7.1725
+    # Boundaries on the desired source
+    RA_min = RA_bound[0]
+    RA_max = RA_bound[1]
+    DEC_min = DEC_bound[0]
+    DEC_max = DEC_bound[1] 
 
     #print("\nNow, parsing the objects found by image segmentation for MAXI:\n")
     for i in range(len(tbl['id'])):
         #print("RA="+str(tbl[i]['xcentroid'])+", DEC="+str(tbl[i]['ycentroid'])) # prints RA, DEC of objects found by segmenting
-        #if (maxi_RA_min <= tbl[i]['xcentroid'] <= maxi_RA_max) and (maxi_DEC_min <= tbl[i]['ycentroid'] <= maxi_DEC_max):  # MAXI
-        if (RA_min <= tbl[i]['xcentroid'] <= RA_max) and (DEC_min <= tbl[i]['ycentroid'] <= DEC_max):                       # alt source
+        if (RA_min <= tbl[i]['xcentroid'] <= RA_max) and (DEC_min <= tbl[i]['ycentroid'] <= DEC_max):                      
             print("\nFound a source.\n")
             new_tbl = Table(rows=tbl[i])
-            #print(new_tbl) # prints just the info on MAXI/the alt source
+            #print(new_tbl) # prints just the info on the source
         
             #append the pixel x-min, pixel y-min, photon count, photon count error and pixel area to results.txt
             #only photon count and photon count error are essential; others are just for debugging
