@@ -1,3 +1,11 @@
+"""
+This script was used specifically to pipe data on the rapid binary black hole system MAXI J1820+070 in 2018 and 2019. 
+It was used on the irulan server of the physics department of McGill University. Itallowed the users (Nick, or Val) to 
+obtain lightcurves of this object using either stacks of 100 or 1000 images for 2 epochs: 9 July 2018 or 28 September 2018. 
+
+A similar script which can be run for either 100 stacks of 100 images or 10 stacks of 1000 images, maxi.py, was also used. 
+"""
+
 import PESTO_lib 
 import subprocess
 
