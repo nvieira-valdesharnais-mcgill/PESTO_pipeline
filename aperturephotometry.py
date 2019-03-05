@@ -1,9 +1,10 @@
-def photometry(header, data, name, thresh_factor, RA_bound, DEC_bound):
+def photometry(header, data, name, thresh_factor, RA_bound, DEC_bound, im=True):
     """
     Input: the header of a reduced object's .fits file, the image data of the file, the name 
     to be used when creating the segmented image and a csv containing all detected sources, a 
-    threshold factor to be used in image segmentation, and 2 arrays giving the RA and DEC (in degrees)
-    boundaries on the desired source.
+    threshold factor to be used in image segmentation, 2 arrays giving the RA and DEC (in degrees)
+    boundaries on the desired source, and a boolean indicating whether or not to save the image 
+    of the segmentation test (defaults to True.)
     Output: None
     
     Obtains a stack of images in the form of a header and data from a .fits file. Estimates the background photon count of this 
