@@ -1,3 +1,9 @@
+"""
+This script contains utilities which are used when debugging the pipeline. They allow the user to look into the headers
+of the image files (.fits) which are used to see quantities such as exposures, the filters used during observations, the 
+size of the image in pixels, etc.
+"""
+
 import PESTO_lib
 import sys
 import os
@@ -6,18 +12,12 @@ from astropy.io import fits
 import numpy as np
 import time
 
-
-'''
-Functions in this section were written to look into the headers of .fits files
-during debugging/whenever the contents of a directory need to be known. 
-'''
            
 def files_with_zero(self):
     """
-    Input:None
-    Output:None
-    Checks for files with IMAGETYP == 'zero'. 
-    Added by Nick and Val.
+    Input: None
+    Return: None
+    Checks for files with IMAGETYP == 'zero'. Prints any files which do.
     """
     for l in self.loc:
         files = os.listdir(l)
@@ -30,10 +30,9 @@ def files_with_zero(self):
 
 def print_filters(self):
     """
-    Input:None
-    Return:None
-    Prints the filters used for .fits in the directories in use.
-    Added by Nick and Val.  
+    Input: None
+    Return: None
+    Prints the filters used for all .fits files in the directories in use.
     """
     for l in self.loc:
         files = os.listdir(l)
@@ -57,10 +56,9 @@ def print_filters(self):
     
 def print_NAXES(self):
     """
-    Input:None
-    Return:None
-    Prints the values of NAXIS1 & NAXIS2 used for .fits in the directories in use.
-    Added by Nick and Val.  
+    Input: None
+    Return: None
+    Prints the values of NAXIS1 & NAXIS2 used for all .fits files in the directories in use.
     """
     for l in self.loc:
         files = os.listdir(l)
@@ -73,10 +71,9 @@ def print_NAXES(self):
 
 def print_WCS_headers(self):
     """
-    Input:None
-    Return:None
-    Prints the values of RA and DEC headers used for .fits in the directories in use.
-    Added by Nick and Val.  
+    Input: None
+    Return: None
+    Prints the values of RA and DEC headers used for all .fits files in the directories in use.
     """
     for l in self.loc:
         files = os.listdir(l)
@@ -90,10 +87,9 @@ def print_WCS_headers(self):
 
 def print_objects(self):
     """
-    Input:None
-    Return:None
-    Prints the values of OBJECT headers used for .fits in the directories in use.
-    Added by Nick and Val.  
+    Input: None
+    Return: None
+    Prints the values of OBJECT headers used for all .fits files in the directories in use.
     """
     for l in self.loc:
         files = os.listdir(l)
@@ -107,9 +103,8 @@ def print_objects(self):
 def print_exposures(self):
     """
     Input:None
-    Return:None
-    Prints the values of OBJECT headers used for .fits in the directories in use.
-    Added by Nick and Val.  
+    Return: None
+    Prints the values of OBJECT headers used for all .fits files in the directories in use.
     """
     for l in self.loc:
         files = os.listdir(l)
@@ -119,5 +114,3 @@ def print_exposures(self):
                 hdr_temp = fits.open(l+'/'+f)
                 hdu = hdr_temp[self.hdr_ind[l]] # Modified: was 0
                 print(f+': EXPOSURE= '+str(hdu.header['EXPOSURE']))
-
-##############################################################
