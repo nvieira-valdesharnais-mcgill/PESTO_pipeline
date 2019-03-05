@@ -49,6 +49,38 @@ og_filestdve_num = filestdve_num
 target = "/exports/scratch/MAXIJ1830/"
 type = ["object","calibration"]
 
+# Here, select the RA and DEC bounds, depending on whether we're looking at MAXI or an alt source
+# Comment out the arrays which you want to use
+
+# FOR MAXI
+#RA = [275.085, 275.097]
+#DEC = [7.1849, 7.1860]
+
+# Source 1 (ref pix) in Nick's finderchart 
+# Very bright, sometimes saturates the CCD
+# Worked in July, not September
+#RA = [275.128, 275.138]
+#DEC = [7.1398, 7.1410]
+
+# Source 2 in Nick's finderchart                                                                                       
+# Worked in July, not in September 
+#RA = [275.108, 275.115]
+#DEC = [7.1655, 7.1775] 
+
+# Source 3 in Nick's finderchart, used with threshfactor 3, for July and Sept
+#RA = [275.09, 275.09]
+#DEC = [7.180, 7.184]
+                                                                                                                         
+# Source 5 in Nick's finderchart                                                                                       
+# Not tested on July, used for September
+#RA = [275.1195, 275.1205]
+#DEC = [7.1540, 7.1552]                                                                                                    
+                                                                                                                           
+# Source 6 in Nick's finderchart                                                                                       
+# Not tested on July, used for September
+RA = [275.072, 275.074]
+DEC = [7.199, 7.201]       
+
 while(filestdve_num < og_filestdve_num+100): #do ten iterations #added 0
     if filestdve_num < 1000: #added 0
         bash_copy = bash_copy_start+"0"+str(filestdve_num)+bash_copy_end
@@ -68,9 +100,9 @@ while(filestdve_num < og_filestdve_num+100): #do ten iterations #added 0
     reduced_data = data.extract_reduced_images("/exports/scratch/MAXIJ1830/"+name, "minired") 
     if whichdate == '180709':
         reduced_data.WCS_preparation(42.0934)
-        reduced_data.photometry("output",2.0) #changed from 7.0 for 1k stacks, 3.0 for 100 stacks 
+        reduced_data.photometry(2.0, RA, DEC) #changed from 7.0 for 1k stacks, 3.0 for 100 stacks 
     elif whichdate == '180928':
         reduced_data.WCS_preparation(40.3927)
-        reduced_data.photometry("output",2.0) #changed from 7.0 for 1k, 3.0 for 100
+        reduced_data.photometry(2.0, RA, DEC) #changed from 7.0 for 1k, 3.0 for 100
 
 
