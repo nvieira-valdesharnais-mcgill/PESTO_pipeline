@@ -424,7 +424,7 @@ class reduced_PESTO_data(PESTO_data):
 
              hdu_temp.writeto(self.loc[0]+'/'+self.name+'/'+f,'warn',overwrite=True) 
 
-     def photometry(self,thresh_factor,RA_bounds,DEC_bounds):     # Added the threshold factor
+     def photometry(self,thresh_factor,RA_bounds,DEC_bounds):
         """
         Input: a threshold factor to be used in selecting what amount of background to ignore during 
         image segmentation and 2 arrays denoting the RA and DEC boundaries (in degrees) of the source 
