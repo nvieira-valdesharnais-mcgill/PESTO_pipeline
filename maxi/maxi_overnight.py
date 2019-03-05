@@ -49,7 +49,7 @@ target = "/exports/scratch/MAXIJ1830/"
 type = ["object","calibration"]
 
 # Here, select the RA and DEC bounds, depending on whether we're looking at MAXI or an alt source
-# Comment out the arrays which you want to use
+# Uncomment the arrays which you want to use
 
 # FOR MAXI
 #RA = [275.085, 275.097]
