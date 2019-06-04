@@ -1,8 +1,11 @@
 """
-This script was used specifically to pipe data on the rapid binary black hole system MAXI J1820+070 in 2018 and 2019. 
-It was used on the irulan server of the physics department of McGill University. It allowed the users (Nick, or Val) to 
-obtain lightcurves of this object using either stacks of 100 or 1000 images for several different epochs. 
-The script runs for either 100 stacks of 100 images or 10 stacks of 1000 images. 
+@authors: Nicholas Vieira & Valérie Desharnais
+@maxi_overnight.py
+
+This script was used specifically to pipe data on the transient binary black hole system MAXI J1820+070 in 2018 and 2019. 
+It was used on the irulan server of the physics department of McGill University. It allowed the users to obtain 
+lightcurves of this object using either stacks of 100 or 1000 images for several different epochs. 
+The script runs for either 100 stacks (iters) of 100 images or 10 stacks (iters) of 1000 images. 
 
 A similar script which can be run indefinitely (until forced to stop), maxi_overnight.py, was also used. 
 """
@@ -15,8 +18,8 @@ whomstdve = 'x'
 filestdve = 'x'
 stackstdve = 'x'
 
-while not(whichdate in ['180709','180928','190312','190317','190318']):
-    whichdate = input("What date do you want? Enter 180709, 180928, 190312, 190317 or 190318\n> ") 
+while not(whichdate in ['180709','180928','190312','190317','190318', '190326', '190404']):
+    whichdate = input("What date do you want? Enter 180709, 180928, 190312, 190317, 190318, 190326 or 190404 \n> ") 
 while not(whomstdve in ['N','n','V','v']):
     whomstdve = input("\nAre you Nick [N/n] or Val [V/v]? \n> ")
 while not (stackstdve in ['100', '1000']):
@@ -45,6 +48,14 @@ while (filestdve == 'x'):
     | 190318 | 100        | 99-5659  |\n\
     +        +------------+----------+\n\
     |        | 1000       | 9-565    |\n\
+    +--------+------------+----------+\n\
+    | 190326 | 100        | 220-4373 |\n\
+    +        +------------+----------+\n\
+    |        | 1000       | 22-437   |\n\
+    +--------+------------+----------+\n\
+    | 190404 | 100        | 83-6134  |\n\
+    +        +------------+----------+\n\
+    |        | 1000       | 8-613    |\n\
     +--------+------------+----------+\n\n> ")
 
 filestdve_num = int(filestdve)
@@ -60,6 +71,8 @@ elif whomstdve in ["N","n"]:
 # MARCH 12: 008241 to 334055
 # MARCH 17: 042805 to 584457
 # MARCH 18: 009878 to 565912
+# MARCH 26: 022000 to 437399
+# APRIL 04: 008235 to 613404
 
 if whichdate == '180709':
     location = ["/exports/scratch/MAXIJ1820/180709_works","/exports/scratch/MAXIJ1820/180709_calibs"] 
@@ -91,6 +104,18 @@ elif whichdate == '190318':
     bash_copy_end = "* /exports/scratch/MAXIJ1820/190318_works/"
     bash_empty = "rm -rf /exports/scratch/MAXIJ1820/190318_works/*"
     bash_gunzip = "gunzip /exports/scratch/MAXIJ1820/190318_works/*"
+elif whichdate == '190326':
+    location = ["/exports/scratch/MAXIJ1820/190326_works","/exports/scratch/MAXIJ1820/190326_calibs"] 
+    bash_copy_start = "cp /data/irulan/omm_transients/MAXIJ1820/190326/MAXIJ1820+070/190326_0000"
+    bash_copy_end = "* /exports/scratch/MAXIJ1820/190326_works/"
+    bash_empty = "rm -rf /exports/scratch/MAXIJ1820/190326_works/*"
+    bash_gunzip = "gunzip /exports/scratch/MAXIJ1820/190326_works/*"
+elif whichdate == '190404':
+    location = ["/exports/scratch/MAXIJ1820/190404_works","/exports/scratch/MAXIJ1820/190404_calibs"] 
+    bash_copy_start = "cp /data/irulan/omm_transients/MAXIJ1820/190404/MAXIJ1820+070/190404_0000"
+    bash_copy_end = "* /exports/scratch/MAXIJ1820/190404_works/"
+    bash_empty = "rm -rf /exports/scratch/MAXIJ1820/190404_works/*"
+    bash_gunzip = "gunzip /exports/scratch/MAXIJ1820/190404_works/*"
 
 og_filestdve_num = filestdve_num
 target = "/exports/scratch/MAXIJ1820"
@@ -186,4 +211,18 @@ while(filestdve_num < og_filestdve_num+filestdve_iters):
         wcs_location = "/data/irulan/omm_transients/wcs_solutions/190318_soln.fits"    # new WCS technique
         reduced_data.WCS_merge(wcs_location)
         reduced_data.photometry(2.0, RA, DEC, "results_190318.txt") 
+
+    elif whichdate == '190326':
+        data.pyraf_reduction("results_190326.txt") 
+        reduced_data = data.extract_reduced_images("/exports/scratch/MAXIJ1820/"+name, "minired") 
+        wcs_location = "/data/irulan/omm_transients/wcs_solutions/190326_soln.fits"    # new WCS technique
+        reduced_data.WCS_merge(wcs_location, delta_x=-45.0) # telescope shifts after fullframes
+        reduced_data.photometry(2.0, RA, DEC, "results_190326.txt") 
+
+    elif whichdate == '190404':
+        data.pyraf_reduction("results_190404.txt") 
+        reduced_data = data.extract_reduced_images("/exports/scratch/MAXIJ1820/"+name, "minired") 
+        wcs_location = "/data/irulan/omm_transients/wcs_solutions/190404_soln.fits"    # new WCS technique
+        reduced_data.WCS_merge(wcs_location)
+        reduced_data.photometry(2.0, RA, DEC, "results_190404.txt") 
 
