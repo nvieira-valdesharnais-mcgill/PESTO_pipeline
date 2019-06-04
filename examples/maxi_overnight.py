@@ -2,27 +2,31 @@
 @authors: Nicholas Vieira & Valérie Desharnais
 @maxi_overnight.py
 
-This script was used specifically to pipe data on the transient binary black hole system MAXI J1820+070 in 2018 and 2019. 
-It was used on the irulan server of the physics department of McGill University. It allowed the users to 
-obtain lightcurves of this object using stacks of 100 or 1000 images for several different epochs.
+This script was used specifically to pipe data on the transient binary black 
+hole system MAXI J1820+070 in 2018 and 2019. It was used on the irulan server 
+of the physics department of McGill University. It allowed the users to obtain 
+lightcurves of this object using stacks of 100 or 1000 images for several 
+different epochs.
 
-A similar script which can be run for either 100 stacks of 100 images (100 iters) or 10 stacks of 1000 images (10 iters), 
-maxi.py, was also used. 
+A similar script which can be run for either 100 stacks of 100 images (100 
+iters) or 10 stacks of 1000 images (10 iters), maxi.py, was also used. This 
+script was designed specifically to work with the source MAXIJ1820+070, but 
+serves as an example for writing your own scripts to automate the process. 
 """
 
 import PESTO_lib 
 import subprocess
 
 whichdate = 'x'
-filestdve = 'x'
-stackstdve = 'x'
+file = 'x'
+stack = 'x'
 
 while not(whichdate in ['180709','180928','190312','190317','190318', '190326', '190404']):
     whichdate = input("What date do you want? Enter 180709, 180928, 190312, 190317, 190318, 190326 or 190404 \n> ")
-while not (stackstdve in ['100', '1000']):
-    stackstdve = input("\nWhat is the stack size? Pick 100 or 1000 \n> ")
-while (filestdve == 'x'):
-    filestdve = input("\nWhat is the integer starting point? Pick using the table below:\n\
+while not (stack in ['100', '1000']):
+    stack = input("\nWhat is the stack size? Pick 100 or 1000 \n> ")
+while (file == 'x'):
+    file = input("\nWhat is the integer starting point? Pick using the table below:\n\
     +--------+------------+----------+\n\
     | Date   | Stack size | Range    |\n\
     +--------+------------+----------+\n\
@@ -55,7 +59,7 @@ while (filestdve == 'x'):
     |        | 1000       | 8-613    |\n\
     +--------+------------+----------+\n\n> ")
 
-filestdve_num = int(filestdve)
+file_num = int(file)
 
 name = "mini_reduced_data" 
 
@@ -66,6 +70,7 @@ name = "mini_reduced_data"
 # MARCH 17: 042805 to 584457
 # MARCH 18: 009878 to 565912
 # MARCH 26: 002200 to 437399
+# APRIL 04: 008235 to 613404
 
 if whichdate == '180709':
     location = ["/exports/scratch/MAXIJ1820/180709_works","/exports/scratch/MAXIJ1820/180709_calibs"] 
@@ -110,7 +115,7 @@ elif whichdate == '190404':
     bash_empty = "rm -rf /exports/scratch/MAXIJ1820/190404_works/*"
     bash_gunzip = "gunzip /exports/scratch/MAXIJ1820/190404_works/*"
 
-og_filestdve_num  = filestdve_num
+og_file_num  = file_num
 target = "/exports/scratch/MAXIJ1820"
 type = ["object","calibration"]
 
@@ -146,25 +151,25 @@ DEC = [7.184, 7.1865]
 #RA = [275.072, 275.074]
 #DEC = [7.199, 7.201]       
 
-if (int(stackstdve) == 100):   # if making stacks of 100
-    filestdve_lim1 = 100      
-    filestdve_lim2 = 1000      
-elif (int(stackstdve) == 1000): # if making stacks of 1000
-    filestdve_lim1 = 10
-    filestdve_lim2 = 100 
+if (int(stack) == 100):   # if making stacks of 100
+    files_lim1 = 100      
+    files_lim2 = 1000      
+elif (int(stack) == 1000): # if making stacks of 1000
+    file_lim1 = 10
+    file_lim2 = 100 
 
 while True: 
-    if filestdve_num < filestdve_lim1:  # check if file is less than ...10000.fits
-        bash_copy = bash_copy_start+"00"+str(filestdve_num)+bash_copy_end
-    elif filestdve_num < filestdve_lim2: # check if file is less than ..100000.fits
-        bash_copy = bash_copy_start+"0"+str(filestdve_num)+bash_copy_end
+    if file_num < file_lim1:  # check if file is less than ...10000.fits
+        bash_copy = bash_copy_start+"00"+str(file_num)+bash_copy_end
+    elif file_num < file_lim2: # check if file is less than ..100000.fits
+        bash_copy = bash_copy_start+"0"+str(file_num)+bash_copy_end
     else:
-        bash_copy = bash_copy_start+str(filestdve_num)+bash_copy_end
+        bash_copy = bash_copy_start+str(file_num)+bash_copy_end
 
     subprocess.run(bash_empty,shell=True)
     subprocess.run(bash_copy,shell=True)
     subprocess.run(bash_gunzip,shell=True)
-    filestdve_num = filestdve_num+1
+    file_num = file_num+1
 
     data = PESTO_lib.raw_PESTO_data(location,type,name,target)
     data.flush()
@@ -208,7 +213,7 @@ while True:
         data.pyraf_reduction("results_190326.txt")
         reduced_data = data.extract_reduced_images("/exports/scratch/MAXIJ1820/"+name, "minired")
         wcs_location = "/data/irulan/omm_transients/wcs_solutions/190326_soln.fits"    # new WCS technique
-        reduced_data.WCS_merge(wcs_location,delta_x=-45.0)
+        reduced_data.WCS_merge(wcs_location,delta_x=-45.0) # telescope shifts after taking fullframes 
         reduced_data.photometry(2.0, RA, DEC, "results_190326.txt")
 
     elif whichdate == '190404':

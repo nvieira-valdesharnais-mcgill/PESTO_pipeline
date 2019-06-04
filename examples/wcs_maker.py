@@ -2,17 +2,17 @@
 @authors: Nicholas Vieira & Valérie Desharnais 
 @wcs_maker.py
 
-A script for running the PESTO pipeline on full-frame data. It creates a stack of all dome flats, subtracts this stack
-individually from each fullframe image, and then stacks the full frames. The resultant reduced data file contains a 
-WCS solution which can then be applied to all of the object images, provided that the instrument does not significantly 
-drift during observations. 
+A script for running the PESTO pipeline on full-frame data. It creates a stack 
+of all dome flats, subtracts this stack individually from each fullframe image, 
+and then stacks the full frames. The resultant reduced data file contains a WCS 
+solution which can then be applied to all of the object images, provided that 
+the instrument does not significantly drift during observations. 
 
-This script was designed specifically to work with the source MAXIJ1820+070, but serves as an example for 
-writing your own scripts to automate the process. 
+This script was designed specifically to work with the source MAXIJ1820+070, 
+but serves as an example for writing your own scripts to automate the process. 
 """
 
 import PESTO_lib
-import subprocess
 
 whichdate = 'x'
 

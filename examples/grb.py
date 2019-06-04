@@ -1,4 +1,8 @@
 """
+@authors: Nicholas Vieira & Valérie Desharnais
+@grb.py
+
+A script to correct and stack several object images for the source GRB180618A. 
 """
 
 import PESTO_lib 
@@ -14,7 +18,6 @@ type = ["object","calibration"]
 # THIS HAS TO BE UPDATED FOR THE GRB 
 
 # FOR GRB
-169.936701156196   Dec: 73.8479030299687
 RA = [169.930, 169.940]
 DEC = [73.842, 73.852]
 
