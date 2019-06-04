@@ -10,7 +10,7 @@ astropy -- Widely-used software for astrophysics-related programming. It's recom
 
 photutils -- Software affiliated with astropy, used specifically for photometry. It's also recommended to download the whole thing. 
 
-# Where to get these modules:
+# Where to get these modules
 
 astropy: http://docs.astropy.org/en/stable/install.html
 
