@@ -5,6 +5,7 @@ from astropy.io import fits
 import numpy as np
 import time
 
+
 class PESTO_data:
      """
      Input: locations_list: A list of strings, one for each directory with PESTO data
@@ -15,7 +16,7 @@ class PESTO_data:
                            (['homes/huanca/aramirez/SkyFlat','homes/huanca/aramirez/GRB180618A'],['calibration','object'], bar)
      Return: PESTO_data object
      """
-     def __init__(self, locations_list,image_type_list,name):
+     def __init__(self, locations_list, image_type_list, name):
           self.loc = locations_list
           self.imtype = dict([(locations_list[i],image_type_list[i]) for i in range(0,len(locations_list))])
           self.name = name
@@ -66,15 +67,16 @@ class PESTO_data:
          Added by Nick and Val.
          """
          temp = os.getcwd()
-         yes_no = 'x'
-         valid_inputs = ["YES","NO","Y","N","y","n","yes","no","Yes","No"]
-         while not(yes_no in valid_inputs) and self.reduced:           
-             yes_no = input('Delete the segmented image and csv, too? [y/n]')
-         if self.reduced:
-             os.chdir(self.loc[0]+'/'+self.name+'/..')
-             run('rm -rf '+self.name, shell=True)
-         else:
-             os.chdir(self.tgt+'/'+self.name)
+         #yes_no = 'x'
+         #valid_inputs = ["YES","NO","Y","N","y","n","yes","no","Yes","No"]
+         #while not(yes_no in valid_inputs) and self.reduced:           
+         #    yes_no = input('Delete the segmented image and csv, too? [y/n]')
+         #if self.reduced:
+         #os.chdir(self.loc[0]+'/'+self.name+'/..')
+         #run('rm -rf '+self.name, shell=True)
+         #else:
+
+         os.chdir(self.tgt+'/'+self.name)
          #run('rm -rf *', shell=True)    
          run('rm -rf *.py', shell=True)
          run('rm -rf *.fits', shell=True)
@@ -82,11 +84,12 @@ class PESTO_data:
          run('rm -rf *.par', shell=True)
          run('rm -rf logfile', shell=True)
          run('rm -rf minired', shell=True)    # HARD FIX
+         run('rm -rf reduc', shell=True)      # HARD FIX
+
          os.chdir(temp)
-         if yes_no in ["YES","Y","y","yes","Yes"]:
-             run('rm -rf *.png', shell=True)
-             run('rm -rf *.csv', shell=True)
-         run('rm -rf minired', shell=True)
+         #if yes_no in ["YES","Y","y","yes","Yes"]:
+         #    run('rm -rf *.png', shell=True)
+         #    run('rm -rf *.csv', shell=True)
          print("\nFlush!")
 
 ##########################
@@ -116,6 +119,8 @@ class raw_PESTO_data(PESTO_data):
                 # Second: case of an extended file
                 elif ('FILTRE' in hdr_temp[1].header):  
                     self.hdr_ind[l] = 1  
+
+##########################
            
     def extended_header_cleanup(self):
         """
@@ -209,7 +214,7 @@ class raw_PESTO_data(PESTO_data):
         for f in files:
             self.resize(source+'/'+f,source+'/'+destination_name+'/'+mode+'_'+f,mode,sizes)    
  
-################################################################################
+##########################
 
     def produce_lists(self,NA=False):
         """
@@ -255,7 +260,7 @@ class raw_PESTO_data(PESTO_data):
                                         self.g_cal.append(f.replace('.gz',''))
                                         self.i_cal.append(f.replace('.gz',''))
                                         self.z_cal.append(f.replace('.gz',''))
-                                    self.NA_cal.append(f.replace('.gz',''))
+                                    self.NA_cal.append(f.replace('.gz','')) 
 
                         elif run_type == 'object':
                             hdu.header['imagetyp'] = 'object'
@@ -267,7 +272,6 @@ class raw_PESTO_data(PESTO_data):
                                 self.i_obj.append(f.replace('.gz',''))
                             elif 'z' in hdu.header['filtre']:
                                 self.z_obj.append(f.replace('.gz',''))
-
 
                         hdr_temp.close()
 
@@ -284,9 +288,9 @@ class raw_PESTO_data(PESTO_data):
              l = self.tgt+'/'+self.name
 
              run(['mkdir','-p', l])
-             run('cp -f ~/login.cl '+l, shell=True)
+             run('cp -f ~/iraf/login.cl '+l, shell=True)
              run('mkdir -p '+l+'/uparm', shell=True)
-             run('cp -f ~/uparm/* '+l+'/uparm', shell=True) 
+             run('cp -f ~/iraf/uparm/* '+l+'/uparm', shell=True) 
              
              #Prints the list for each filter to the working directory
              np.savetxt(l+'/r_list.txt',self.r_cal, fmt = "%s")
@@ -299,7 +303,8 @@ class raw_PESTO_data(PESTO_data):
              np.savetxt(l+'/object_list_g.txt', self.g_obj, fmt = "%s")
              np.savetxt(l+'/object_list_i.txt', self.i_obj, fmt = "%s")
              np.savetxt(l+'/object_list_z.txt', self.z_obj, fmt = "%s")
-             self.workdir_present=True
+            
+             self.workdir_present = True
 
              for l in self.loc:
                  run(['rsync','-r','-p',l+'/',self.tgt+'/'+self.name]) # p option added by Nick: should sync without changing permissions
@@ -316,11 +321,10 @@ class raw_PESTO_data(PESTO_data):
               run(['rm', '-r', self.tgt+'/'+self.name])
               self.workdir_present=False
 
-    def pyraf_reduction(self):
+    def pyraf_reduction(self, results_file="results.txt"):
         """
-        Input: None
+        Input: The name of the results file to which we save the data (results.txt by default.)
         Output: None
-        If th
         """
         if self.list_made==False:
             return 'Please make sure lists for each band were produced'
@@ -329,10 +333,10 @@ class raw_PESTO_data(PESTO_data):
         temp = os.getcwd()
         run(['rsync','datared.py',self.tgt+'/'+self.name])
         os.chdir(self.tgt+'/'+self.name)
-        run("bash -c 'source activate iraf27 && python2 datared.py && source deactivate'", shell=True)
+        run("bash -c 'source activate iraf27 && python2 datared.py "+results_file+" && source deactivate'", shell=True)
         os.chdir(temp)
 
-    def extract_reduced_images(self,reduced_data_folder_loc, reduced_data_folder_name):
+    def extract_reduced_images(self, reduced_data_folder_loc, reduced_data_folder_name):
         run(['mkdir', reduced_data_folder_loc+'/'+reduced_data_folder_name])
         run('cp -r '+self.tgt+'/'+self.name+'/*reduced.fits '+reduced_data_folder_loc+'/'+reduced_data_folder_name, shell=True) 
         return reduced_PESTO_data([reduced_data_folder_loc], ['object'], reduced_data_folder_name)
@@ -357,6 +361,96 @@ class reduced_PESTO_data(PESTO_data):
         super(reduced_PESTO_data, self).__init__(locations_list, image_type_list, name)
         self.reduced = True
 
+     def astrometry(self, roi_x, roi_y, ra_est=0, dec_est=0, rad_est=0, min_scale=0, max_scale=0, units_scale='x'):
+       """
+       Input: the bounds of the region of interest in x pixels and in y pixels as arrays. Enforces that the reference pixel 
+       chosen by astrometry is in the centre of this ROI.  
+       (Optional) estimates for the RA, DEC, radius (in degrees) and minimum/maximum scales of the image(s).  Default units 
+       for scale is arcseconds per pixel. If these are known, can speed up astrometry. RA, DEC, and radius guesses are 
+       ignored by astrometry unless all 3 quantities are guessed at. The same is true for min_scale and max_scale.
+
+       Output: None.
+       
+       Solves the field of the reduced data object(s) to prepare for source detection.
+       Only needs to be used once per given dataset. 
+       """
+       
+       temp = os.getcwd()
+       os.chdir(self.loc[0]+'/'+self.name) # move to the directory of the reduced data file(s)
+       files = os.listdir()
+
+       center_x = roi_x[0] + (roi_x[1] - roi_x[0])/2.0 # we put the reference pixel in the center of the ROI
+       center_y = roi_y[0] + (roi_y[1] - roi_y[0])/2.0 
+
+       for f in files:
+            newname = f.replace(".fits","_wcs.fits") # new filename includes _wcs to distinguish it
+            options = " --overwrite --no-plots --fits-image --new-fits "+newname+" --cancel "+newname # options for solve-field
+            options += " --crpix-x "+str(center_x)+" --crpix-y "+str(center_y)
+
+            # if ra, dec, radius estimates are given
+            if ((ra_est != 0) and (dec_est != 0) and (rad_est != 0)):
+                 options += " --ra "+str(ra_est)+" --dec "+str(dec_est)+" --rad "+str(rad_est)
+
+            # if scales estimates are given
+            # does not check if units given are valid (for now), but astrometry will notice 
+            if ((max_scale !=0) and (min_scale != 0) and (units_scale != 'x')):
+                 options += " --scale-low "+str(min_scale)+" --scale-high "+str(max_scale)+" --scale-units "+units_scale
+
+            # more options (experimenting)
+            #options += " -v" # verbose
+            #options += " --no-verify"  # speed up CPU time by not looking at WCS headers
+            options += " --downsample 1" # decrease downsample -> increase star count (works, keep this)
+            options += " --pixel-error 0.1" # decrease pixel error (default 1) -> increase star count 
+            #options += " --nsigma 6" # decrease sigma required for source detection (default 8) -> increase source count
+            #options += " --odds-to-solve 5" # decrease odds required to come to a soln (default 1e9) -> increase odds
+
+            run("solve-field "+str(options)+" "+f, shell=True)
+            run("find . -type f -not -name '*wcs*' -print0 | xargs -0 rm --",shell=True) # remove all files not in format *wcs*
+
+       os.chdir(temp) # return to original directory
+
+     def WCS_merge(self, wcs_location, delta_x=0, delta_y=0):
+        """
+        Input: The location and name of the WCS solution to be merged with the reduced data object, and values for the difference in       
+        x=0 and y=0 between the WCS solution and the object images. 
+        Output: None
+        """ 
+
+        hdu_wcs = fits.open(wcs_location, mode='readonly')[0]
+
+        temp = os.getcwd()
+        os.chdir(self.loc[0]+'/'+self.name) # move to the directory of the reduced data file
+        files = os.listdir()
+        for f in files:
+             hdu_temp = fits.open(self.loc[0]+'/'+self.name+'/'+f,mode='update')[0]
+
+             # in practice, delta_y encoded this way
+             # delta_x is unfortunately not recorded anywhere and can only be observed with DS9
+             if delta_y == 0:
+                  delta_y = hdu_temp.header['ROI_Y_2'] # the difference in y=0 points between the WCS soln and the object data
+             
+             hdu_temp.header.append(('CTYPE1','RA---TAN-SIP')) # type of projection
+             hdu_temp.header.append(('CTYPE2','DEC--TAN-SIP'))
+             hdu_temp.header.append(('CRPIX1', (float(hdu_wcs.header['CRPIX1'])-delta_x) )) # x ref from WCS soln minus delta_x
+             hdu_temp.header.append(('CRPIX2', (float(hdu_wcs.header['CRPIX2'])-delta_y) )) # y ref from WCS soln minus delta_y
+             hdu_temp.header.append(('CRVAL1', float(hdu_wcs.header['CRVAL1']) )) # x ref in WCS 
+             hdu_temp.header.append(('CRVAL2', float(hdu_wcs.header['CRVAL2']) )) # y ref in WCS
+
+             # The change in RA, DEC in X and Y when projecting
+             # 0.46 arcsec per pixel == 0.000128 degrees/px
+             hdu_temp.header.append(('CDELT1', -0.000128))
+             hdu_temp.header.append(('CDELT2', 0.000128))
+
+             # The parameters of the rotation matrix
+             # The angle accounts for the rotation of the frame 
+             hdu_temp.header.append(('CD1_1', float(hdu_wcs.header['CD1_1']) ))
+             hdu_temp.header.append(('CD1_2', float(hdu_wcs.header['CD1_2']) ))
+             hdu_temp.header.append(('CD2_1', float(hdu_wcs.header['CD2_1']) ))
+             hdu_temp.header.append(('CD2_2', float(hdu_wcs.header['CD2_2']) ))
+ 
+             hdu_temp.writeto(self.loc[0]+'/'+self.name+'/'+f,'warn',overwrite=True) 
+
+        os.chdir(temp)
 
      def WCS_preparation(self, angle=0):
         """
@@ -368,13 +462,6 @@ class reduced_PESTO_data(PESTO_data):
         files = os.listdir(self.loc[0]+'/'+self.name)
         for f in files: 
              hdu_temp = fits.open(self.loc[0]+'/'+self.name+'/'+f,mode='update')[0]
-
-             # Picking out the reference pixel (located around 80, 300 for MAXI in July/Sept data)
-             #image_data = hdu_temp.data[0:95,300:350] # Clipping the top to avoid the horizontal dead pixel
-             #brightest_pix = np.unravel_index(np.argmax(image_data), image_data.shape)
-             #brightest_pix = [brightest_pix[0],brightest_pix[1]+300] # To adjust for trim to 300:350
-             #ref_RA = 275.1101511 
-             #ref_DEC = 7.169812515
 
              # For 221000-271000 in July, need a different reference pixel
              image_data = hdu_temp.data[0:95,20:80] # Clipping the top to avoid the horizontal dead pixel
@@ -403,17 +490,6 @@ class reduced_PESTO_data(PESTO_data):
              hdu_temp.header.append(('PC2_1',np.sin(angle_rad)))
              hdu_temp.header.append(('PC2_2',np.cos(angle_rad)))
 
-             #hdu_temp.header.append(('PC1_1',np.cos(angle_rad)+np.sin(angle_rad)))
-             #hdu_temp.header.append(('PC1_2',np.cos(angle_rad)+np.sin(angle_rad)))
-             #hdu_temp.header.append(('PC2_1',-np.sin(angle_rad)+np.cos(angle_rad)))
-             #hdu_temp.header.append(('PC2_2',-np.sin(angle_rad)+np.cos(angle_rad)))
-
-             # OMM's values for 180709 data
-             #hdu_temp.header.append(('PC1_1',-0.0000943745257614))
-             #hdu_temp.header.append(('PC1_2',0.0000851308715725))
-             #hdu_temp.header.append(('PC2_1',0.0000855725732586))
-             #hdu_temp.header.append(('PC2_2',0.0000945508646851))
-
              # Pixel values of the reference coord
              hdu_temp.header.append(('CRPIX1', brightest_pix[1])) 
              hdu_temp.header.append(('CRPIX2', brightest_pix[0])) 
@@ -424,13 +500,15 @@ class reduced_PESTO_data(PESTO_data):
 
              hdu_temp.writeto(self.loc[0]+'/'+self.name+'/'+f,'warn',overwrite=True) 
 
-     def photometry(self,thresh_factor,RA_bounds,DEC_bounds):
+     def photometry(self,thresh_factor,RA_bounds,DEC_bounds,results_file="results.txt"):
         """
         Input: a threshold factor to be used in selecting what amount of background to ignore during 
         image segmentation and 2 arrays denoting the RA and DEC boundaries (in degrees) of the source 
-        we wish to detect. 
+        we wish to detect. *Optional: the results file to append to (results.txt by default). If a non-default 
+        name is used in pyraf_reduction(), the same filename must be used here.
+ 
         Example input: reduced_dataset.photometry(1.5, [275.1, 276.2], [7.10, 7.18])
-        Produces a segmented image and a .csv with source properties (see apeturephotometry.py for more)
+        Produces a segmented image and a .csv with source properties (see aperturephotometry.py for more)
         """
         import aperturephotometry
         files = os.listdir(self.loc[0]+'/'+self.name)
@@ -439,7 +517,7 @@ class reduced_PESTO_data(PESTO_data):
              hdu_temp.header['EPOCH'] = float(hdu_temp.header['EPOCH']) # EPOCH needs to be a float   
              hdu_temp.writeto(self.loc[0]+'/'+self.name+'/'+f,'warn',overwrite=True) 
              hdu = fits.open(self.loc[0]+'/'+self.name+'/'+f)    
-             aperturephotometry.photometry(hdu[0].header,hdu[0].data,f.replace('.fits', ''),thresh_factor,RA_bounds, DEC_bounds)
+             aperturephotometry.photometry(hdu[0].header,hdu[0].data,f.replace('.fits', ''),thresh_factor,RA_bounds, DEC_bounds,results_file)
 
 ########################
 
