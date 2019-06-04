@@ -30,6 +30,7 @@ def clean_broken_lines(tf_path,output_path):
     tf.close()
     for line in contents:
         data=line.split("\t")
+        #print(len(data))
         if len(data) > 9 and len(data) < 12:
             output = open(output_path,"a")
             output.write(line)
@@ -49,7 +50,7 @@ def standardize_stacking(tf_path,output_path,stack):
             output.write(line)
             output.close()    
 
-def set_initial_time_zero(tf_path,output_path,stack):
+def set_initial_time_zero(tf_path,output_path):
     """
     Sets the first timestamp to be t=0 and adjusts all subsequent timestamps.
     Will warn you and break if a day transition is detected
@@ -58,7 +59,7 @@ def set_initial_time_zero(tf_path,output_path,stack):
     contents = tf.readlines()
     tf.close()        
     initial_line = contents[0].split("\t")
-    initial_time = float(initial_line[0])
+    initial_time = float(initial_line[3])
     old_timestamp = initial_time
     for line in contents:
         data = line.split("\t")
@@ -69,7 +70,7 @@ def set_initial_time_zero(tf_path,output_path,stack):
         else:
             old_timestamp = float(data[3])        
         time=float(data[3])-initial_time
-        new_line = data[0]+"\t"+data[1]+"\t"+data[2]+"\t"+str(time)+"\t"+data[4]+"\t"+data[5]+"\t"+data[6]+"\t"+data[7]+"\t"+data[8]+"\t"+data[9]+"\n"
+        new_line = data[0]+"\t"+data[1]+"\t"+data[2]+"\t"+str(time)+"\t"+data[4]+"\t"+data[5]+"\t"+data[6]+"\t"+data[7]+"\t"+data[8]+"\t"+data[9]#+"\n"
         output = open(output_path,"a")
         output.write(new_line)
         output.close()
@@ -100,7 +101,6 @@ def correct_day_transition(tf_path,output_path,lower_limit=200,upper_limit=86000
             break
     if index < 0:
         print("No transition detected in this dataset. Exiting.")
-        return
     else:
         for i in range(index+1,len(times)):
             times[i]=times[i]+86400
@@ -162,6 +162,54 @@ def quicksort(contents_to_sort):
         more_sorted = quicksort(more)
         contents_sorted.extend(more_sorted) 
     return contents_sorted
+
+def correct_outliers(tf_path,output_path,sig=3.0):
+    
+    tf = open(tf_path,"r")
+    contents = tf.readlines()
+    tf.close()
+    photon_counts = []
+    for line in contents:
+        data = line.split("\t")
+        photon_counts.append(float(data[8]))
+    
+    photon_count_differences = []
+    for i in range(len(photon_counts)-1):
+        photon_count_differences.append(photon_counts[i+1]-photon_counts[i])
+        
+    import statistics 
+    av = statistics.mean(photon_count_differences)
+    stdev = statistics.stdev(photon_count_differences)
+    lower_lim = av-sig*stdev
+    upper_lim = av+sig*stdev
+    
+    output = open(output_path,"a")
+    output.write(contents[0])
+    output.close() 
+    counter = 0
+    for i in range(len(photon_counts)-1):
+        if photon_count_differences[i] > lower_lim and photon_count_differences[i] < upper_lim:
+            output = open(output_path,"a")
+            output.write(contents[i+1])
+            output.close()
+        else:
+            counter = counter+1
+    print("Lines removed: "+str(counter))
+
+def strip_above(tf_path,output_path,strip=100000,tmin=0,tmax=100000):
+    tf = open(tf_path,"r")
+    contents = tf.readlines()
+    tf.close()
+    for line in contents:
+        data = line.split("\t")
+        if float(data[3]) < tmin or float(data[3]) > tmax:
+            output = open(output_path,"a")
+            output.write(line)
+            output.close()
+        elif float(data[8]) < strip:
+            output = open(output_path,"a")
+            output.write(line)
+            output.close()
         
 def smooth(tf_path,output_path=-1,threshold=-1,factor=1.025):
     """
@@ -317,7 +365,6 @@ def correct_weather(db_path, tf_path, output_path, weighted=False, gap_threshold
         pces.append(float(data[9]))
         line_segments.append(data[0]+"\t"+data[1]+"\t"+data[2]+"\t"+data[3]+"\t"+data[4]+"\t"+data[5]+"\t"+data[6]+"\t"+data[7])
     source = [ts,xs,ys,pcs,pces]
-    print("Source data loaded. Beginning weather correction.")
     
     #we now have the alts and the source structured similarly
     #the source however has no data type <factors>, which we now need to interpolate    
@@ -426,6 +473,7 @@ def relative_photometry(threshold,source_path,alt_path,output_path):
     contents_source = sf.readlines()
     sf.close()
     ts_s, pcs_s, pces_s = [],[],[]
+    line_start, line_mid = [],[]
     for line in contents_source:
         data = line.split("\t")
         ts_s.append(float(data[3]))
@@ -611,7 +659,8 @@ def lightcurve(tf_path,output=-1,plotcolor='black',saveimage=True):
         photon_err.append(float(data[9]))
 
     #normalization of photon count with first count = 0
-    first_count = photon[0]
+    #first_count = photon[0]
+    first_count = 0
     photon_normed = [p - first_count for p in photon]
     photon_normed_kilo = [p/1000.0 for p in photon_normed]
     photon_err_kilo = [perr/1000.0 for perr in photon_err]
@@ -629,12 +678,12 @@ def lightcurve(tf_path,output=-1,plotcolor='black',saveimage=True):
             output = output+"lightcurve.png"
         plt.switch_backend('agg')
         plt.rc('text',usetex=False)
-        fig, ax0  = plt.subplots(nrows=1,sharex=False)
-        ax0.set_title('Lightcurve')
+        fig, ax0  = plt.subplots(figsize=(6,2),nrows=1,sharex=False)
+        ax0.set_title('Light Curve: 28 September 2018')#HERE
         ax0.errorbar(time_normed,photon_normed_kilo,xerr=time_err,yerr=photon_err_kilo,fmt='.',
                      markerfacecolor=plotcolor,markeredgecolor=plotcolor)
         ax0.set_xlabel('Time (s)')
-        ax0.set_ylabel('Relative Photon Count $[10^3]$')
+        ax0.set_ylabel('Photon Count $[10^3]$')
         plt.savefig(output,bbox_inches='tight')
         
     return time, time_err, photon, photon_err, time_normed, photon_normed
@@ -642,7 +691,7 @@ def lightcurve(tf_path,output=-1,plotcolor='black',saveimage=True):
 def QPO_detect(tf_path,output=-1,df_path=-1,minfreq=0,maxfreq=1,sinterms=1,
                saveimage=True,savetext=False,is_window=False,norm='standard',
                renorm=False,poisson=True,FALs=True,plotcolor='black',
-               probs=[0.95, 0.5, 0.01]):
+               probs=[0.95,0.5,0.05]):
     """
     Assumes data reduction is complete and that the textfile output is populated 
     as one row per reduced image and columns delimited by \t in order of:
@@ -785,8 +834,8 @@ def QPO_detect(tf_path,output=-1,df_path=-1,minfreq=0,maxfreq=1,sinterms=1,
             output = output+"lomb_scargle.png"
         if (FALs==False):
             plt.switch_backend('agg')
-            fig, ax0  = plt.subplots(nrows=1,sharex=False)
-            ax0.set_title('Lomb-Scargle Periodogram')
+            fig, ax0  = plt.subplots(figsize=(6,2),nrows=1,sharex=False)
+            ax0.set_title('Lomb-Scargle Periodogram: 28 September 2018')#HERE
             ax0.set_ylabel('Power')   
             ax0.plot(frequency_strict_milli, power_strict, color=plotcolor) #mHz
             ax0.set_xlabel('Frequency [mHz]')
@@ -794,7 +843,7 @@ def QPO_detect(tf_path,output=-1,df_path=-1,minfreq=0,maxfreq=1,sinterms=1,
         else:
             #heights = limbo.false_alarm_level(probs) #moved outside conditonal
             plt.switch_backend('agg')
-            fig, ax0  = plt.subplots(nrows=1,sharex=False)
+            fig, ax0  = plt.subplots(figsize=(6,2),nrows=1,sharex=False)
             for i in range(len(heights)):
                 ax0.axhline(y=heights[i],color='#d3d3d3')
             ax0.plot(frequency_strict_milli, power_strict, color=plotcolor) #mHz
@@ -1051,7 +1100,7 @@ def source_versus_alt(freq1, freqerr1, power1, freq2, freqerr2, power2,
                 plt.axhline(h,color='#d3d3d3', zorder=1)
     
     #plt.title("Two-source Comparison") # more general 
-    plt.title("MAXI J1820+070 versus alternate source") # for us
+    plt.title("MAXI J1820+070 versus alternate source #3: 28 September 2018") # for us
     plt.xlabel("Frequency [mHz]")
     plt.ylabel("Power")
     handles, labels = ax.get_legend_handles_labels()
