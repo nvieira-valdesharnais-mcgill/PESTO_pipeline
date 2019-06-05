@@ -232,7 +232,7 @@ class raw_PESTO_data(PESTO_data):
  
 ###############################################################################
 
-    def produce_lists(self,NA=False):
+    def produce_lists(self):
         """
         Input: None
         Output: None
@@ -275,13 +275,6 @@ class raw_PESTO_data(PESTO_data):
                                     self.i_cal.append(f.replace('.gz',''))
                                 elif 'z' in hdu.header['filtre']:
                                     self.z_cal.append(f.replace('.gz',''))
-                                elif 'N/A' in hdu.header['filtre']:
-                                    if NA:
-                                        self.r_cal.append(f.replace('.gz',''))
-                                        self.g_cal.append(f.replace('.gz',''))
-                                        self.i_cal.append(f.replace('.gz',''))
-                                        self.z_cal.append(f.replace('.gz',''))
-                                    self.NA_cal.append(f.replace('.gz','')) 
 
                         ## OBJECT files 
                         elif run_type == 'object':
@@ -326,7 +319,6 @@ class raw_PESTO_data(PESTO_data):
              np.savetxt(l+'/g_list.txt', self.g_cal, fmt = "%s")
              np.savetxt(l+'/i_list.txt', self.i_cal, fmt = "%s")
              np.savetxt(l+'/z_list.txt', self.z_cal, fmt = "%s")
-             np.savetxt(l+'/NA_list.txt', self.NA_cal, fmt = "%s")
              np.savetxt(l+'/bias_list.txt', self.bias, fmt = "%s")
              np.savetxt(l+'/object_list_r.txt', self.r_obj, fmt = "%s")
              np.savetxt(l+'/object_list_g.txt', self.g_obj, fmt = "%s")
@@ -478,9 +470,9 @@ class reduced_PESTO_data(PESTO_data):
              hdu_temp.header.append(('CTYPE2','DEC--TAN-SIP'))
              # x ref from WCS soln minus delta_x
              hdu_temp.header.append(('CRPIX1', 
-                                     (float(hdu_wcs.header['CRPIX1'])-delta_x)))  
+                                     (float(hdu_wcs.header['CRPIX1'])+delta_x)))  
              hdu_temp.header.append(('CRPIX2', 
-                                     (float(hdu_wcs.header['CRPIX2'])-delta_y)))
+                                     (float(hdu_wcs.header['CRPIX2'])+delta_y)))
              # y ref from WCS soln minus delta_y
              hdu_temp.header.append(('CRVAL1', 
                                      float(hdu_wcs.header['CRVAL1']))) # in WCS 
@@ -565,7 +557,7 @@ class reduced_PESTO_data(PESTO_data):
              hdu_temp.writeto(self.loc[0]+'/'+self.name+'/'+f,'warn',
                               overwrite=True) 
 
-     def photometry(self, thresh_factor, RA_bounds, DEC_bounds, 
+     def photometry(self, thresh_factor=3.0, RA_bounds, DEC_bounds, 
                     results_file="results.txt"):
         """
         Input: a threshold factor to be used in selecting what level of 
