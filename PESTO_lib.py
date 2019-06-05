@@ -568,7 +568,6 @@ class reduced_PESTO_data(PESTO_data):
         filename must be used here.
         Output: None
         
-        
         e.g. reduced_dataset.photometry([275.1,276.2], [7.10,7.18], 3.5)
         Produces a segmented image and a .csv with properties for all the 
         sources and appends properties of the specified source to the results 
