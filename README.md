@@ -18,7 +18,8 @@ photutils -- Software affiliated with astropy, used specifically for photometry.
 
 astropy: http://docs.astropy.org/en/stable/install.html
 
-pyraf: http://www.stsci.edu/institute/software_hardware/pyraf (Installing this correctly can be very difficult. Follow instructions carefully to download via AstroConda). 
+pyraf: http://www.stsci.edu/institute/software_hardware/pyraf (Installing this correctly can be very difficult. Follow instructions carefully to download via AstroConda).
+If you have access to the irulan server of McGill University, iraf will already be installed. If your institution has a server dedicated to physics/astrophysics, it will probably already have iraf as well. 
 
 astrometry.net: http://astrometry.net/doc/readme.html#installing
 
