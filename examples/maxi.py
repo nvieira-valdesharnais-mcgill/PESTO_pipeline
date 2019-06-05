@@ -176,53 +176,53 @@ while(file_num < og_file_num+file_iters):
 
     data = PESTO_lib.raw_PESTO_data(location,type,name,target) 
     data.flush()
-    data.produce_lists(NA=True) 
+    data.produce_lists() 
     data.make_working_directory() 
 
     if whichdate == '180709':
         data.pyraf_reduction("results_july.txt") 
         reduced_data = data.extract_reduced_images("/exports/scratch/MAXIJ1820/"+name, "minired") 
         reduced_data.WCS_preparation(42.0934)     # old WCS technique
-        reduced_data.photometry(2.0, RA, DEC, "results_july.txt")
+        reduced_data.photometry(RA, DEC, 2.0, "results_july.txt")
   
     elif whichdate == '180928':
         data.pyraf_reduction("results_sept.txt") 
         reduced_data = data.extract_reduced_images("/exports/scratch/MAXIJ1820/"+name, "minired") 
         reduced_data.WCS_preparation(40.3927)     # old WCS technique
-        reduced_data.photometry(2.0, RA, DEC, "results_sept.txt")
+        reduced_data.photometry(RA, DEC, 2.0, "results_sept.txt")
 
     elif whichdate == '190312':
         data.pyraf_reduction("results_190312.txt") 
         reduced_data = data.extract_reduced_images("/exports/scratch/MAXIJ1820/"+name, "minired") 
         wcs_location = "/data/irulan/omm_transients/wcs_solutions/190312_soln.fits"    # new WCS technique
         reduced_data.WCS_merge(wcs_location)
-        reduced_data.photometry(2.0, RA, DEC, "results_190312.txt") 
+        reduced_data.photometry(RA, DEC, 2.0, "results_190312.txt") 
 
     elif whichdate == '190317':
         data.pyraf_reduction("results_190317.txt") 
         reduced_data = data.extract_reduced_images("/exports/scratch/MAXIJ1820/"+name, "minired") 
         wcs_location = "/data/irulan/omm_transients/wcs_solutions/190317_soln.fits"    # new WCS technique
         reduced_data.WCS_merge(wcs_location)
-        reduced_data.photometry(2.0, RA, DEC, "results_190317.txt") 
+        reduced_data.photometry(RA, DEC, 2.0, "results_190317.txt") 
 
     elif whichdate == '190318':
         data.pyraf_reduction("results_190318.txt") 
         reduced_data = data.extract_reduced_images("/exports/scratch/MAXIJ1820/"+name, "minired") 
         wcs_location = "/data/irulan/omm_transients/wcs_solutions/190318_soln.fits"    # new WCS technique
         reduced_data.WCS_merge(wcs_location)
-        reduced_data.photometry(2.0, RA, DEC, "results_190318.txt") 
+        reduced_data.photometry(RA, DEC, 2.0, "results_190318.txt") 
 
     elif whichdate == '190326':
         data.pyraf_reduction("results_190326.txt") 
         reduced_data = data.extract_reduced_images("/exports/scratch/MAXIJ1820/"+name, "minired") 
         wcs_location = "/data/irulan/omm_transients/wcs_solutions/190326_soln.fits"    # new WCS technique
-        reduced_data.WCS_merge(wcs_location, delta_x=-45.0) # telescope shifts after taking fullframes
-        reduced_data.photometry(2.0, RA, DEC, "results_190326.txt") 
+        reduced_data.WCS_merge(wcs_location, delta_x=45.0) # telescope shifts after taking fullframes
+        reduced_data.photometry(RA, DEC, 2.0, "results_190326.txt") 
 
     elif whichdate == '190404':
         data.pyraf_reduction("results_190404.txt") 
         reduced_data = data.extract_reduced_images("/exports/scratch/MAXIJ1820/"+name, "minired") 
         wcs_location = "/data/irulan/omm_transients/wcs_solutions/190404_soln.fits"    # new WCS technique
         reduced_data.WCS_merge(wcs_location)
-        reduced_data.photometry(2.0, RA, DEC, "results_190404.txt") 
+        reduced_data.photometry(RA, DEC, 2.0, "results_190404.txt") 
 
