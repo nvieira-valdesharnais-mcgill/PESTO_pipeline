@@ -557,7 +557,7 @@ class reduced_PESTO_data(PESTO_data):
              hdu_temp.writeto(self.loc[0]+'/'+self.name+'/'+f,'warn',
                               overwrite=True) 
 
-     def photometry(self, thresh_factor=3.0, RA_bounds, DEC_bounds, 
+     def photometry(self, RA_bounds, DEC_bounds, thresh_factor=3.0,
                     results_file="results.txt"):
         """
         Input: a threshold factor to be used in selecting what level of 
