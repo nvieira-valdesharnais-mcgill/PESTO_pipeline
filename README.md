@@ -10,6 +10,8 @@ astropy -- Widely-used software for astrophysical programming. It's recommended 
 
 pyraf -- An industry standard tool for all sorts of astrophysical programming. Used here for stacking images and applying domeflat corrections. 
 
+astrometry.net -- A tool for source detection and astrometric calibration of images (finding world coordinate system solutions).
+
 photutils -- Software affiliated with astropy, used specifically for photometry. It's also recommended to download the whole thing. 
 
 # Where to get these modules
@@ -17,6 +19,8 @@ photutils -- Software affiliated with astropy, used specifically for photometry.
 astropy: http://docs.astropy.org/en/stable/install.html
 
 pyraf: http://www.stsci.edu/institute/software_hardware/pyraf (Installing this correctly can be very difficult. Follow instructions carefully to download via AstroConda). 
+
+astrometry.net: http://astrometry.net/doc/readme.html#installing
 
 photutils: https://photutils.readthedocs.io/en/stable/install.html
 
