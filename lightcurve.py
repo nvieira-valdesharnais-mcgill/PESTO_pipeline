@@ -390,7 +390,8 @@ def build_weather_database(db_path,tf_paths):
         # write the entry set into the database file
         for j in range(len(t)):
             output = open(db_path,"a")
-            line = str(t[j])+"\t"+str(x[j])+"\t"+str(y[j])+"\t"+str(pc[j])+"\t"+str(f[j])+"\n"
+            line = str(t[j])+"\t"+str(x[j])+"\t"+str(y[j])+"\t"+str(pc[j])
+            line += "\t"+str(f[j])+"\n"
             output.write(line)
             output.close() 
         # indicate switching to next entry set in database
@@ -399,10 +400,12 @@ def build_weather_database(db_path,tf_paths):
             output.write("ALT_CHANGE\n")
             output.close()    
 
-def correct_weather(db_path, tf_path, output_path, weighted=False, gap_threshold=3.0):     
+def correct_weather(db_path, tf_path, output_path, weighted=False, 
+                    gap_threshold=3.0):     
     """
-    Corrects a source for weather effects via factor averaging from alternative sources.
-    Requires a weather database containing at least one alternative source to function.
+    Corrects a source for weather effects via factor averaging from alternative 
+    sources. Requires a weather database containing at least one alternative 
+    source to function.
     """           
     
     #load in the weather database, check the number of alts present
@@ -442,14 +445,16 @@ def correct_weather(db_path, tf_path, output_path, weighted=False, gap_threshold
         ys.append(float(data[6]))
         pcs.append(float(data[8]))
         pces.append(float(data[9]))
-        line_segments.append(data[0]+"\t"+data[1]+"\t"+data[2]+"\t"+data[3]+"\t"+data[4]+"\t"+data[5]+"\t"+data[6]+"\t"+data[7])
+        line_segments.append(data[0]+"\t"+data[1]+"\t"+data[2]+"\t"+data[3]+
+                             "\t"+data[4]+"\t"+data[5]+"\t"+data[6]+"\t"+
+                             data[7])
     source = [ts,xs,ys,pcs,pces]
     
     #we now have the alts and the source structured similarly
     #the source however has no data type <factors>, which we now need to interpolate    
     #we will save time by avoiding checking the weighted condition inside the loop
     
-    if weighted is False:
+    if not weighted:
  
         for j in range(len(source[0])):
             #print(j)
@@ -488,7 +493,7 @@ def correct_weather(db_path, tf_path, output_path, weighted=False, gap_threshold
             output.write(line)
             output.close()
 
-    elif weighted is True:
+    elif weighted:
         
         for j in range(len(source[0])):
             #print(j)
@@ -500,7 +505,8 @@ def correct_weather(db_path, tf_path, output_path, weighted=False, gap_threshold
                         if abs(alt[0][i+1]-alt[0][i]) <= gap_threshold:
                             x = (alt[2][i]+alt[2][i+1])/2.0
                             y = (alt[3][i]+alt[3][i+1])/2.0
-                            alt_distances.append(((source[2][j]-x)**2 + (source[3][j]-y)**2)**0.5)
+                            alt_distances.append(((source[2][j]-x)**2 + 
+                                                  (source[3][j]-y)**2)**0.5)
                             m = (alt[4][i+1]-alt[4][i])/(alt[0][i+1]-alt[0][i])
                             b = alt[4][i]-m*alt[0][i]
                             alt_factors.append(m*source[0][j]+b) 
@@ -535,7 +541,8 @@ def correct_weather(db_path, tf_path, output_path, weighted=False, gap_threshold
             
             #output the new corrected line            
             #print("successful correction")
-            line = line_segments[j]+"\t"+str(corrected_pc)+"\t"+str(corrected_pc_error)+"\n"
+            line = line_segments[j]+"\t"+str(corrected_pc)+"\t"
+            line += str(corrected_pc_error)+"\n"
             output = open(output_path,"a")
             output.write(line)
             output.close()
@@ -544,7 +551,8 @@ def correct_weather(db_path, tf_path, output_path, weighted=False, gap_threshold
 
 def relative_photometry(threshold,source_path,alt_path,output_path):    
     """
-    Creates a new file of a (main) source's photon count adjusted relative to another (alt) source's counts.
+    Creates a new file of a (main) source's photon count adjusted relative to 
+    another (alt) source's counts.
     """
     
     #read in source data
@@ -558,8 +566,10 @@ def relative_photometry(threshold,source_path,alt_path,output_path):
         ts_s.append(float(data[3]))
         pcs_s.append(float(data[8]))
         pces_s.append(float(data[9]))
-        line_start.append(str(float(data[0]))+"\t"+str(float(data[1]))+"\t"+str(float(data[2])))
-        line_mid.append(str(float(data[4]))+"\t"+str(float(data[5]))+"\t"+str(float(data[6]))+"\t"+str(float(data[7])))
+        line_start.append(str(float(data[0]))+"\t"+str(float(data[1]))+"\t"+
+                          str(float(data[2])))
+        line_mid.append(str(float(data[4]))+"\t"+str(float(data[5]))+"\t"+
+                        str(float(data[6]))+"\t"+str(float(data[7])))
     
     #read in constant data
     af = open(alt_path,"r")
@@ -578,7 +588,8 @@ def relative_photometry(threshold,source_path,alt_path,output_path):
         if abs(ts_s[cs]-ts_a[ca]) < threshold: #if within threshold, calculate relative photon count and error
             #error_on_div = (pcs_s[cs]/pcs_a[ca])*((pces_s[cs]/pcs_s[cs])**2+(pces_a[ca]/pcs_a[ca])**2)**0.5
             #for now, we do source_count - alt_count and source_error + alt_error
-            line = line_start[cs]+"\t"+str(ts_s[cs])+"\t"+line_mid[cs]+"\t"+str(pcs_s[cs]-pcs_a[ca])+"\t"+str(pces_s[cs]+pces_a[ca])+"\n"
+            line = line_start[cs]+"\t"+str(ts_s[cs])+"\t"+line_mid[cs]+"\t"
+            line += str(pcs_s[cs]-pcs_a[ca])+"\t"+str(pces_s[cs]+pces_a[ca])+"\n"
             output = open(output_path,"a")
             output.write(line)
             output.close()
@@ -596,8 +607,12 @@ def relative_photometry(threshold,source_path,alt_path,output_path):
             
 def correct_poisson(freqs, powers, fit_lows=True):
     """
-    Correct Poisson noise from a periodogram by fitting a decaying exponential to the data.
-    Default is to use only local minima during the fitting, breaks if less than two are found.
+    Input: frequencies and powers to be fit and a bool indicating whether or 
+    not to fit using local minima in the spectrum (optional; default True)
+    Output: the powers of the spectrum, corrected for Poisson noise 
+    Correct Poisson noise from a periodogram by fitting a decaying exponential 
+    to the data. Default is to use only local minima during the fitting. Breaks 
+    if less than two minima are found.
     """
     # find local minima in powers if fit_lows set to True (default)
     min_freqs, min_powers = [],[]
@@ -617,8 +632,8 @@ def correct_poisson(freqs, powers, fit_lows=True):
     from scipy.optimize import curve_fit
     def func(x, a, b):
         return a*np.exp(b*x)
-    popt, pcov = curve_fit(func, xdata=min_freqs, ydata=min_powers,maxfev=1000,bounds=((0,-np.inf),(np.inf,0)))
-    #add a catch if it does not converge?
+    popt, pcov = curve_fit(func, xdata=min_freqs, ydata=min_powers,
+                           maxfev=1000,bounds=((0,-np.inf),(np.inf,0)))
     
     #print the curve fit for reference
     print("Best a+exp(bt) fit:")
@@ -637,24 +652,17 @@ def correct_poisson(freqs, powers, fit_lows=True):
             correction = func(freqs[i],popt[0],popt[1])#,popt[2]
             corrected_powers.append(powers[i]-correction)
             corrections.append(correction)
-    
-    #plot correction for debugging purposes        
-    #import matplotlib.pyplot as plt
-    #fig, ax = plt.subplots()
-    #ax.plot(freqs, powers, color='red',zorder=1)
-    #ax.plot(freqs, corrections, color='blue',zorder=2)
-    #plt.xlabel("Frequency [mHz]")
-    #plt.ylabel("Power")
-    #plt.savefig("C:/Users/Val/Desktop/ls_poisson.png")
-    #plt.gcf().clear()
             
     return corrected_powers
     
 def ls_fft_compare(tf_path,output=-1,spacing=-1):
     """
     Input: a path to the data file, a name for the output plot (optional; 
-    default is ~/ls_fft.png), 
-    Creates a PSD-normalized Fourier transform and a PSD-normalized Lomb-Scargle transform of the data.
+    default is ~/ls_fft.png), and a spacing argument 
+    Output: None 
+    
+    Creates a PSD-normalized Fourier transform and a PSD-normalized 
+    Lomb-Scargle transform of the data.
     Plots and saves a comparative graph. Assumes a uniform time spacing in the 
     data set.
     Spacing default set to the average of the timestamp differences.
@@ -982,10 +990,10 @@ def QPO_detect(tf_path, output=-1, df_path=-1, minfreq=0, maxfreq=1,
 
 def lorentz(x, *p):
     """
-    Input: an array of frequencies [Hz] and the parameters which describe the sum 
-    of six Lorentzians. f_i represent centres of peaks, g_i their width, i_i
+    Input: an array of frequencies [Hz] and the parameters which describe the 
+    sum of six Lorentzians. f_i represent centres of peaks, g_i their width, i_i
     their height.
-    Output: the value of the six-Lorentzian sum.
+    Output: the value of the six-Lorentzian sum
     """
     import numpy as np 
     
@@ -1007,27 +1015,20 @@ def six_lorentzian(freq, freq_err, pows, fit_params, FAL_heights,
       to be fit;
     - Array of guesses for the (19) fit parameters in the order
       [d, f0, f1, ..., f5, g0, g1, ..., g5, i0, i1, ..., i5]
-      where d is some baseline power, and f_i, g_i and i_i are the centres, widths
-      and heights, respectively, of individual Lorentzians;
+      where d is some baseline power, and f_i, g_i and i_i are the centres, 
+      widths and heights, respectively, of individual Lorentzians;
     - The false alarm probability (FALs) heights for the source being fit;
-    - make_plot bool (default True): whether or not to plot & save figure;
-    - bars bool (default True): whether or not to plot vertical bars at peaks
-    - FALs bool (default False): whether or not to plot FALs lines
+    - 'make_plot' bool (default True): whether or not to plot & save figure;
+    - 'bars bool' (default True): whether or not to plot vertical bars at peaks
+    - 'FALs bool' (default False): whether or not to plot FALs lines
+    
+    Output: fit parameters, errors on the fit parameters, and covariance 
+    matrix of the fit 
     
     Saves a figure showing the data to be fit and the fit function plotted over
-    the entire range, and vertical bars showing where the peaks are located 
-    Bars may be disabled. Fitting done using the least-squares method.
-    
-    Prints the peak locations, with errors, in a readable format. 
-    
-    TO IMPLEMENT: Errors on the input data. Very important. !!!!!!!!
-    
-    TO IMPLEMENT: Not just vertical bars, but bars of confidence. Maybe a 
-    gradient or something else pretty.
-    
-    TO IMPLEMENT: A legend
-    
-    Output: Fit parameters; errors on the fit parameters; covariance matrix
+    the entire range, and vertical bars showing where the peaks are located.
+    Bars may be disabled. Fitting done using the least-squares method. Also 
+    prints the peak locations, with errors, in a readable format. 
     """
     
     from scipy import optimize as opt
@@ -1052,7 +1053,7 @@ def six_lorentzian(freq, freq_err, pows, fit_params, FAL_heights,
     #for i in range(6):
     #    print("%f ± %f mHz"%(popt[i+7],perr[i+7]))
     
-    if make_plot == True: 
+    if make_plot: 
         fig, ax = plt.subplots()
         fit_visual = lorentz(freq_mhz, *popt) # obtain fit over entire range
         
@@ -1061,12 +1062,12 @@ def six_lorentzian(freq, freq_err, pows, fit_params, FAL_heights,
         ax.plot(freq_mhz, fit_visual, color='green',linestyle='--',zorder=2,
                 label="Fit") # fit 
         
-        if bars == True: # if bars desired at peak locations
+        if bars: # if bars desired at peak locations
             peak_locations = [popt[i] for i in range(1,7)]
             for p in peak_locations:
                 ax.axvline(p, color='grey') # vertical lines at peak locations 
 
-        if FALs == True: # if FALs desired 
+        if FALs: # if FALs desired 
             for h in FAL_heights:
                 ax.axhline(h,color='#d3d3d3')
                             
@@ -1075,7 +1076,6 @@ def six_lorentzian(freq, freq_err, pows, fit_params, FAL_heights,
         plt.ylabel("Power")
         plt.legend()
         plt.grid(which="both")
-        #plt.show()
         plt.savefig("data+fit+peaks.pdf")
         plt.gcf().clear()
         
@@ -1084,36 +1084,36 @@ def six_lorentzian(freq, freq_err, pows, fit_params, FAL_heights,
 
 def source_versus_alt(freq1, freqerr1, power1, freq2, freqerr2, power2,
                       fit_params, FAL_heights, output, 
-                      plotcolor, compare_method="vertical lines", FALs=False):
+                      plottitle="2-source Comparison", plotcolor="black", 
+                      compare_method="vertical lines", FALs=False):
     """
     Input:  
     - Frequency, frequency errors [Hz] and powers of one periodogram 
       and those of another periodogram to which we compare;
-    - Parameters to be used as guesses to the fit of the second periodogram [see
-      six_lorentzian for formatting]; 
-    - Heights for the false alarm probabilities (FALs) of the second periodogram, obtained 
-      from the QPO_detect() method; 
-    - Comparison method (vertical lines for the peaks of the second periodogram, by default); 
+    - Parameters to be used as guesses to the fit of the second periodogram 
+    [see six_lorentzian for formatting]; 
+    - Heights for the false alarm probabilities (FALs) of the second 
+    periodogram, obtained from the QPO_detect() method;
     - Name of the plot to be saved;
-    - Color for the plot of the first periodogram
+    - Title for the plot (default "2-source Comparison")
+    - Color for the plot of the first periodogram (default black);
+    - Comparison method (vertical lines for the peaks of the second 
+    periodogram, by default);
+    - 'FALs' bool: whether or not to plot false alarm probability levels
+
+    Output: None
     
-    Extracts 6 peaks from the second periodogram by fitting a 6-Lorentzian 
+    Extracts 6 peaks from the *second* periodogram by fitting a 6-Lorentzian 
     curve. Plots these peaks as vertical lines by default, and simply plots
-    the fit of the second periodogram over the entire range otherwise
+    the fit of the second periodogram over the entire range otherwise.
     
     Usage:
-    Allows the user to see if peaks present in a source which is not of interest
-    are present in the periodogram of a source of interest. e.g., are peaks in 
-    the periodogram of MAXI J1820+070 (input as source #2) unique, or are these same peaks 
-    located in periodograms of other sources (input as source #1) in the field? 
-    Do sources in the field have peaks that MAXI doesn't?
-    
-    TO IMPLEMENT: Not just vertical bars, but bars of confidence. Maybe a 
-    gradient or something else pretty.
-    
-    TO IMPLEMENT: A legend.
-    
-    Output: None
+    Allows the user to see if peaks present in a source which is not of 
+    interest are present in the periodogram of a source of interest. e.g., are 
+    peaks in the periodogram of MAXI J1820+070 (input as source #2) unique, or 
+    are these same peaks located in periodograms of other sources (input as 
+    source #1) in the field? Do sources in the field have peaks that MAXI 
+    doesn't?
     """
     
     import matplotlib.pyplot as plt
@@ -1142,7 +1142,7 @@ def source_versus_alt(freq1, freqerr1, power1, freq2, freqerr2, power2,
         for p in peak_locations:
             ax.axvline(p, color='blue', label="MAXI J1820+070 peak", zorder=2)
     else:
-        # plot the fit obtained for the second periodogram
+        # plot the entire fit obtained for the second periodogram
         fit_visual = lorentz(freq2_mhz, *fitopt)
         ax.plot(freq2_mhz, fit_visual, color='#1fa774',linestyle='-.', 
                  label="MAXI J1820+070 fit",zorder=4,linewidth=1.5) # fit 
@@ -1151,8 +1151,7 @@ def source_versus_alt(freq1, freqerr1, power1, freq2, freqerr2, power2,
         for h in FAL_heights:
                 plt.axhline(h,color='#d3d3d3', zorder=1)
     
-    #plt.title("Two-source Comparison") # more general 
-    plt.title("MAXI J1820+070 versus alternate source #3: 28 September 2018") # for us
+    plt.title(plottitle)
     plt.xlabel("Frequency [mHz]")
     plt.ylabel("Power")
     handles, labels = ax.get_legend_handles_labels()
