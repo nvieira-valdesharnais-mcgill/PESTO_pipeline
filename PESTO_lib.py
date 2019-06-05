@@ -464,7 +464,7 @@ class reduced_PESTO_data(PESTO_data):
              # delta_x is unfortunately not recorded anywhere and can only be 
              # observed by examining the fits files directly (via e.g. DS9)
              if delta_y == 0: # if no argument given to override this
-                  delta_y = hdu_temp.header['ROI_Y_2'] 
+                  delta_y = (-1.0)*hdu_temp.header['ROI_Y_2'] 
              
              hdu_temp.header.append(('CTYPE1','RA---TAN-SIP')) # projection type
              hdu_temp.header.append(('CTYPE2','DEC--TAN-SIP'))
@@ -566,8 +566,10 @@ class reduced_PESTO_data(PESTO_data):
         results file to append to (optional; default is 'results.txt' 
         ***If a non-default name is used in pyraf_reduction(), the same 
         filename must be used here.
-        e.g. reduced_dataset.photometry(1.5, [275.1,276.2], [7.10,7.18])
+        Output: None
         
+        
+        e.g. reduced_dataset.photometry([275.1,276.2], [7.10,7.18], 3.5)
         Produces a segmented image and a .csv with properties for all the 
         sources and appends properties of the specified source to the results 
         file (if it is found)
