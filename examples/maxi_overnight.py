@@ -152,8 +152,8 @@ DEC = [7.184, 7.1865]
 #DEC = [7.199, 7.201]       
 
 if (int(stack) == 100):   # if making stacks of 100
-    files_lim1 = 100      
-    files_lim2 = 1000      
+    file_lim1 = 100      
+    file_lim2 = 1000      
 elif (int(stack) == 1000): # if making stacks of 1000
     file_lim1 = 10
     file_lim2 = 100 
