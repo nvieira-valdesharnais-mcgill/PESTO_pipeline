@@ -1,12 +1,32 @@
+"""
+@authors: Nicholas Vieira & Valérie Desharnais
+@lightcurve.py
+
+A library of functions to clean up data produced by the PESTO_lib pipeline, 
+correct for variations in the data introduced by any kind of weather, plot 
+light curves, obtain Lomb-Scargle periodograms of these light curves, fit the 
+noise and/or real components of these periodograms, and compare multiple light 
+curves.
+
+Input result files should contains rows of 10 tab-delimited entries as follows:
+    
+<stack size> <exposure> <exposure error> <time> <time error> ...
+<x centroid minima> <y centroid minima> <pix source area> <flux> <flux error>
+
+Without the ... and < >, of course.
+"""
+
 def clean_no_source(tf_path,output_path=-1):
     """
-    Removes lines from the data file containing the NO SOURCE error message.
+    Input: a path to the data file to clean up and an output path (optional; 
+    default is to save output to ~/smooth.txt)
+    Output: None 
+    Removes lines from the data file containing the NO SOURCE flag.
     """
     tf = open(tf_path,"r")
     contents = tf.readlines()
     tf.close()
-    #if no output location given, store as home/smooth.txt
-    if output_path == -1:
+    if output_path == -1: # no output given 
             from os.path import expanduser
             output_path = expanduser("~")
             output_path = output_path+"clean.txt"    
@@ -22,8 +42,10 @@ def clean_no_source(tf_path,output_path=-1):
 
 def clean_broken_lines(tf_path,output_path):
     """
-    Removes lines from the data file containing less than 10 entries or more than 11 entries.
-    In other words, only full lines (10 tab entries) with one potential comment (1 tab entry) are left.
+    Input: a path to the data file to clean up and an output path
+    Output: None 
+    Removes any lines from the data file which do not contain exactly 
+    10 entries. 
     """
     tf = open(tf_path,"r")
     contents = tf.readlines()
@@ -38,7 +60,11 @@ def clean_broken_lines(tf_path,output_path):
             
 def standardize_stacking(tf_path,output_path,stack):
     """
-    Removes lines from the data file containing an incorrect number of stacked images.
+    Input: a path to the data file to clean up, an output path, and the 
+    desired stack size
+    Output: None
+    Removes any lines from the data file which were not obtained for a stack 
+    of size 'stack' as passed to the function .
     """
     tf = open(tf_path,"r")
     contents = tf.readlines()
@@ -52,8 +78,10 @@ def standardize_stacking(tf_path,output_path,stack):
 
 def set_initial_time_zero(tf_path,output_path):
     """
+    Input: a path to the data file to clean up and an output path
+    Output: None
     Sets the first timestamp to be t=0 and adjusts all subsequent timestamps.
-    Will warn you and break if a day transition is detected
+    * Will warn and break if a day transition is detected.
     """    
     tf = open(tf_path,"r")
     contents = tf.readlines()
@@ -70,16 +98,25 @@ def set_initial_time_zero(tf_path,output_path):
         else:
             old_timestamp = float(data[3])        
         time=float(data[3])-initial_time
-        new_line = data[0]+"\t"+data[1]+"\t"+data[2]+"\t"+str(time)+"\t"+data[4]+"\t"+data[5]+"\t"+data[6]+"\t"+data[7]+"\t"+data[8]+"\t"+data[9]#+"\n"
+        new_line = data[0]+"\t"+data[1]+"\t"+data[2]+"\t"
+        new_line += str(time)+"\t"+data[4]+"\t"+data[5]+"\t"+data[6]+"\t"
+        new_line += data[7]+"\t"+data[8]+"\t"+data[9]#+"\n"
         output = open(output_path,"a")
         output.write(new_line)
         output.close()
             
-def correct_day_transition(tf_path,output_path,lower_limit=200,upper_limit=86000):
+def correct_day_transition(tf_path,output_path,lower_limit=200,
+                           upper_limit=86000):
     """
-    Fixes the timestamps if a day transition occured during observation time.
-    Can adjust sensitivity if needed to detect the transition by modifying the limits.
-    Note: will not automatically set the first timestamp to be t=0.
+    Input: a path to the data file to clean up, an output path, a minimum on 
+    the allowed time and a maximum on the allowed time
+    Output: None 
+    Examines the timestamps of each row in the data file and checks that they 
+    are between the lower_limit and upper_limit provided. If not, a day 
+    transition is present, and this function fixes the timestamps. 
+    Can adjust sensitivity if needed to detect the transition by modifying the 
+    limits.
+    Note: will NOT automatically set the first timestamp to be t=0.
     """
     tf = open(tf_path,"r")
     contents = tf.readlines()
@@ -113,7 +150,10 @@ def correct_day_transition(tf_path,output_path,lower_limit=200,upper_limit=86000
         
 def sort_by_timestamp(tf_path,output_path):
     """
-    Sort the data by timestamp. Warns if a day transition occurs in the data. 
+    Input: a path to the data file to clean up and an output path
+    Output: None
+    Sort the data by timestamp. 
+    * Will warn and break if a day transition is detected.
     """
     tf = open(tf_path,"r")
     contents = tf.readlines()
@@ -139,7 +179,9 @@ def sort_by_timestamp(tf_path,output_path):
         
 def quicksort(contents_to_sort):
     """
-    Implementation of quicksort for sort_by_timestamp()
+    Input: an array to sort 
+    Output: the sorted array 
+    Implementation of quicksort for sort_by_timestamp().
     """
     if len(contents_to_sort) < 2:
         return contents_to_sort
@@ -164,6 +206,15 @@ def quicksort(contents_to_sort):
     return contents_sorted
 
 def correct_outliers(tf_path,output_path,sig=3.0):
+    """
+    Input: a path to the data file to clean up, an output path, and a sigma 
+    (standard deviation) above which to declare a point an outlier (optional;
+    default is 3.0 standard deviations)
+    Output: None
+    Examines the flux of each row in the data file, eliminating rows with a 
+    flux which is 'sig' standard deviations above or below the mean, and 
+    writes the valid rows to a new file. 
+    """
     
     tf = open(tf_path,"r")
     contents = tf.readlines()
@@ -197,6 +248,16 @@ def correct_outliers(tf_path,output_path,sig=3.0):
     print("Lines removed: "+str(counter))
 
 def strip_above(tf_path,output_path,strip=100000,tmin=0,tmax=100000):
+    """
+    Input: a path to the data file to clean up, an output path, a hard limit 
+    on the flux allowed in the light curve (optional; default is 100000 cts/s), 
+    a minimum for the time of each data point (optional; default is 0), and a 
+    maximum for the time (optional; default is 100000)
+    Output: None
+    Examines the timestamps and flux of each row in the data file, eliminating
+    rows with a flux above 'strip' or a time outside the interval [tmin, tmax].
+    Writes the filtered data to a new file.
+    """
     tf = open(tf_path,"r")
     contents = tf.readlines()
     tf.close()
@@ -213,12 +274,17 @@ def strip_above(tf_path,output_path,strip=100000,tmin=0,tmax=100000):
         
 def smooth(tf_path,output_path=-1,threshold=-1,factor=1.025):
     """
+    Input: a path to the data file to smooth, an output path (optional; 
+    default is to save to ~/smooth.txt), a threshold value (optional;
+    default is factor*(average time separation between adjacent points) ), 
+    and a factor (optional; default 1.025 -> 102.5%)
+    Output: None 
     Smooths data by averaging a bin by both its predecessor and successor.
     Removes lines where the time gap is above the threshold value.
-    Threshold default set to 102.5% of the average smoothed timestamp differences.
+    Threshold default is 102.5% of the average smoothed timestamp differences.
     """
     
-    #acquiring the data in the text file to average
+    # acquiring the data in the text file to average
     tf = open(tf_path,"r")
     contents = tf.readlines()
     tf.close()
@@ -236,7 +302,7 @@ def smooth(tf_path,output_path=-1,threshold=-1,factor=1.025):
         d8.append(float(data[8]))
         d9.append(float(data[9]))
 
-    #naively smoothing the data by averaging the predecessor, the bin and the succesor together    
+    # naively smoothing the data by averaging the predecessor, bin and succesor  
     nsd0,nsd1,nsd2,nsd3,nsd4,nsd5,nsd6,nsd7,nsd8,nsd9 = ([] for i in range(10))
     for i in range(len(d0)-2):
         nsd0.append((d0[i]+d0[i+1]+d0[i+2])/3.0)
@@ -250,29 +316,36 @@ def smooth(tf_path,output_path=-1,threshold=-1,factor=1.025):
         nsd8.append((d8[i]+d8[i+1]+d8[i+2])/3.0)
         nsd9.append((d9[i]+d9[i+1]+d9[i+2])/3.0)
         
-    #acquiring the time differences between each subsequent pair of smoothed data points    
+    # acquiring the time differences between each pair of smoothed data points    
     t_dif = []
     for i in range(len(nsd3)-1):
         t_dif.append(nsd3[i+1]-nsd3[i])
 
-    #defining a threshold if no argument was passed    
+    # defining a threshold if no argument was passed    
     if threshold == -1:
         threshold=factor*sum(t_dif)/float(len(t_dif))
-        print("The threshold for gaps was set to about "+("%.2f"%threshold)+", about "+("%.1f"%(100*factor))+"% of the average time spacing."+"\n")
+        print("The threshold for gaps was set to about "+
+              ("%.2f"%threshold)+", about "+("%.1f"%(100*factor))+
+              "% of the average time spacing."+"\n")
 
-    #if the output location = input location, append a delimitation.
+    #if the output location = input location, append a line to indicate the
+    # start of the smoothed data
     if tf_path == output_path:
         output = open(output_path,"a")
-        output.write("Smoothed data of threshold "+("%.2f"%threshold)+" appended below:"+"\n")
+        output.write("Smoothed data of threshold "+("%.2f"%threshold)+
+                     " appended below:"+"\n")
         output.close()
 
-    #correcting the naively smoothed data by appending only entries with time differences less than the threshold
-    #if no output location given, store as home/smooth.txt
+    # correcting the naively smoothed data by appending only entries with time 
+    # differences less than the threshold
+    # if no output location given, store as ~/smooth.txt
     if output_path == -1:
             from os.path import expanduser
             output_path = expanduser("~")
             output_path = output_path+"smooth.txt"
-    line = str(nsd0[0])+"\t"+str(nsd1[0])+"\t"+str(nsd2[0])+"\t"+str(nsd3[0])+"\t"+str(nsd4[0])+"\t"+str(nsd5[0])+"\t"+str(nsd6[0])+"\t"+str(nsd7[0])+"\t"+str(nsd8[0])+"\t"+str(nsd9[0])+"\n"
+    line = str(nsd0[0])+"\t"+str(nsd1[0])+"\t"+str(nsd2[0])+"\t"+str(nsd3[0])
+    line += "\t"+str(nsd4[0])+"\t"+str(nsd5[0])+"\t"+str(nsd6[0])+"\t"
+    line += str(nsd7[0])+"\t"+str(nsd8[0])+"\t"+str(nsd9[0])+"\n"
     output = open(output_path,"a")
     output.write(line)
     output.close() 
@@ -281,10 +354,16 @@ def smooth(tf_path,output_path=-1,threshold=-1,factor=1.025):
         if t_dif[i] <= threshold:
             counter = counter+1
             output = open(output_path,"a")
-            line = str(nsd0[i+1])+"\t"+str(nsd1[i+1])+"\t"+str(nsd2[i+1])+"\t"+str(nsd3[i+1])+"\t"+str(nsd4[i+1])+"\t"+str(nsd5[i+1])+"\t"+str(nsd6[i+1])+"\t"+str(nsd7[i+1])+"\t"+str(nsd8[i+1])+"\t"+str(nsd9[i+1])+"\n"
+            line = str(nsd0[i+1])+"\t"+str(nsd1[i+1])+"\t"+str(nsd2[i+1])+"\t"
+            line += str(nsd3[i+1])+"\t"+str(nsd4[i+1])+"\t"+str(nsd5[i+1])+"\t"
+            line += str(nsd6[i+1])+"\t"+str(nsd7[i+1])+"\t"+str(nsd8[i+1])+"\t"
+            line += str(nsd9[i+1])+"\n"
             output.write(line)
             output.close()            
-    print("The original file contained "+str(len(d0))+" entries. The smooth file contains "+str(counter)+" entries, a reduction of about "+("%.0f"%(100*(1-(counter/float(len(d0))))))+"%."+"\n")
+    print("The original file contained "+str(len(d0))+
+          " entries. The smooth file contains "+str(counter)+
+          " entries, a reduction of about "+
+          ("%.0f"%(100*(1-(counter/float(len(d0))))))+"%."+"\n")
             
 def build_weather_database(db_path,tf_paths):
     """
@@ -573,8 +652,11 @@ def correct_poisson(freqs, powers, fit_lows=True):
     
 def ls_fft_compare(tf_path,output=-1,spacing=-1):
     """
+    Input: a path to the data file, a name for the output plot (optional; 
+    default is ~/ls_fft.png), 
     Creates a PSD-normalized Fourier transform and a PSD-normalized Lomb-Scargle transform of the data.
-    Outputs a comparative graph. Assumes a uniform time spacing in the data set.
+    Plots and saves a comparative graph. Assumes a uniform time spacing in the 
+    data set.
     Spacing default set to the average of the timestamp differences.
     """
     from astropy.stats import LombScargle
@@ -592,13 +674,16 @@ def ls_fft_compare(tf_path,output=-1,spacing=-1):
         x.append(float(data[3]))
         y.append(float(data[8]))
         
-    #defining a uniform time spacing if no argument was passed
+    # defining a uniform time spacing if no argument was passed
+    # **NICC: is the t_dif here necessary? it's not used anywhere else in this
+    # function, it's only printed 
     if spacing == -1:
         t_dif = []
         for i in range(len(x)-1):
             t_dif.append(x[i+1]-x[i])
         spacing = sum(t_dif)/float(len(t_dif)) 
-        print("Spacing is set to "+str(spacing)+" ms based off of average timestamp differences.")
+        print("Spacing is set to "+str(spacing)+
+              " ms based off of average timestamp differences.")
 
     #the fourier transform of the data with PSD normalization    
     frequency = np.fft.fftfreq(len(x), spacing)
@@ -626,16 +711,24 @@ def ls_fft_compare(tf_path,output=-1,spacing=-1):
     ax1.set_ylabel('Power')
     plt.savefig(output,bbox_inches='tight')
     
-def lightcurve(tf_path,output=-1,plotcolor='black',saveimage=True): 
+def lightcurve(tf_path, output=-1, plottitle="Light Curve", plotcolor='black',
+               saveimage=True): 
     """
-    Assumes data reduction is complete and that the textfile at tf_path is populated 
-    as one row per reduced image and columns delimited by \t in order of:
-    (0) stack, (1) exp avg (ms), (2) exp stdev (ms), (3) time avg (s), 
-    (4) time stdev (s), (5) x_min, (6) y_min, (7) area, (8) count, (9) count error
+    Input: a path to the data file, an output path (optional; default is 
+    to save at ~/lightcurve.png), a title for the plot (optional; default is 
+    "Light Curve"), a color for the plot (optional; default is black) and a 
+    bool indicating whether or not to save the image after plotting it 
+    (optional; default True)
+    Output: arrays for the time, error on time, photon count, error on photon 
+    count, normalized time, and normalized photon count 
     
-    If saveimage is False, no .pngs are saved
-    Returns 5 lists: time, time errors, photon counts, photon count errors, 
-    normalized time and normalized photon counts
+    Produces a light curve for the input results file and optionally saves
+    the image. 
+    Assumes data reduction is complete and that the textfile at tf_path is 
+    populated as one row per reduced image and tab-delimited columns: 
+    (0) stack, (1) exp avg [ms], (2) exp stdev [ms], (3) time avg [s], 
+    (4) time stdev [s], (5) centroid x_min, (6) centroid y_min, (7) pixel area, 
+    (8) photon counts, (9) photon count error
     """
 
     import matplotlib.pyplot as plt
@@ -659,18 +752,17 @@ def lightcurve(tf_path,output=-1,plotcolor='black',saveimage=True):
         photon_err.append(float(data[9]))
 
     #normalization of photon count with first count = 0
-    #first_count = photon[0]
     first_count = 0
     photon_normed = [p - first_count for p in photon]
-    photon_normed_kilo = [p/1000.0 for p in photon_normed]
-    photon_err_kilo = [perr/1000.0 for perr in photon_err]
+    photon_normed_kilo = [p/1000.0 for p in photon_normed] # kilo-counts
+    photon_err_kilo = [perr/1000.0 for perr in photon_err] 
     
     #normalization of time with t1 = 0
     first_time = time[0]
     time_normed = [t - first_time for t in time]
     
-    #creating the normalized lightcurve plot
-    #if no output, store as home/lightcurve.png
+    # creating the normalized lightcurve plot
+    # if no output, store as ~/lightcurve.png
     if (saveimage == True):
         if output == -1:
             from os.path import expanduser
@@ -679,60 +771,68 @@ def lightcurve(tf_path,output=-1,plotcolor='black',saveimage=True):
         plt.switch_backend('agg')
         plt.rc('text',usetex=False)
         fig, ax0  = plt.subplots(figsize=(6,2),nrows=1,sharex=False)
-        ax0.set_title('Light Curve: 28 September 2018')#HERE
-        ax0.errorbar(time_normed,photon_normed_kilo,xerr=time_err,yerr=photon_err_kilo,fmt='.',
-                     markerfacecolor=plotcolor,markeredgecolor=plotcolor)
+        ax0.set_title(plottitle)
+        ax0.errorbar(time_normed, photon_normed_kilo, xerr=time_err,
+                     yerr=photon_err_kilo, fmt='.', markerfacecolor=plotcolor,
+                     markeredgecolor=plotcolor)
         ax0.set_xlabel('Time (s)')
         ax0.set_ylabel('Photon Count $[10^3]$')
         plt.savefig(output,bbox_inches='tight')
         
     return time, time_err, photon, photon_err, time_normed, photon_normed
     
-def QPO_detect(tf_path,output=-1,df_path=-1,minfreq=0,maxfreq=1,sinterms=1,
-               saveimage=True,savetext=False,is_window=False,norm='standard',
-               renorm=False,poisson=True,FALs=True,plotcolor='black',
-               probs=[0.95,0.5,0.05]):
+def QPO_detect(tf_path, output=-1, df_path=-1, minfreq=0, maxfreq=1, 
+               sinterms=1, saveimage=True, savetext=False,
+               is_window=False, norm='standard', renorm=False, poisson=True, 
+               FALs=True, plottitle="Lomb-Scargle Periodogram", 
+               plotcolor='black', probs=[0.95,0.5,0.05]):
     """
-    Assumes data reduction is complete and that the textfile output is populated 
-    as one row per reduced image and columns delimited by \t in order of:
-    (0) stack, (1) exp avg (ms), (2) exp stdev (ms), (3) time avg (s), 
-    (4) time stdev (s), (5) x_min, (6) y_min, (7) area, (8) count, (9) count error
+    Input: many, many arguments. All but the first are optional. 
+         tf_path: path to data file
+         output: path to output image (default ~/lomb_scargle.png)
+         df_path: path to output text file (default ~/lomb_scargle.txt)
+         minfreq: minimum allowed frequency (default 0 Hz)
+         maxfreq: maximum allowed frequency (default 1 Hz)
+         sinterms: no. of sin terms to be used in Lomb-Scargle fit (default 1)
+         saveimage: whether or not to save the plot (default True)
+         savetext: whether or not to save results to text file (default True)
+         is_window: whether or not to show LS periodogram for the window of 
+                    the input data (default False)
+         norm: normalization to use (default 'standard')
+         renorm: if True, set min. power to 0 and max. to 1 (default False)
+         poisson: whether or not to apply correction to Poisson noise (default 
+                  True)
+         FALs: whether or not to plot false-alarm probability levels (default 
+               True, unless poisson=True, in which case they are not)
+         plottitle: a title for the plot (default "Lomb-Scargle Periodogram")
+         plotcolor: color of plot (default black)
+         probs: false alarm probability levels to plot if plotted (defaults
+         are 95%, 50%, and 5% chance of data being a result of random 
+         Gaussian noise)
+         
+    Output: a LombScargle object, frequency in the given interval, error on 
+    frequency, power in the given interval, and false alarm probability levels
+    ** Plots show frequency in mHz, but all frequency outputs are in Hz
     
-    minfreq and maxfreq are the set of frequencies to restrict the Lomb-Scargle
-    (LS) autopower method; sinterms is the number of sinusoidal terms to be used in 
-    the LS model fit 
+    Assumes data reduction is complete and that the textfile at tf_path is 
+    populated as one row per reduced image and tab-delimited columns: 
+    (0) stack, (1) exp avg [ms], (2) exp stdev [ms], (3) time avg [s], 
+    (4) time stdev [s], (5) centroid x_min, (6) centroid y_min, (7) pixel area, 
+    (8) photon counts, (9) photon count error
     
-    If saveimage is False (non-default), no .png is saved
+    If renormalized, every power p obtained from the LS is divided by the 
+    maximum power before plotting. 
     
-    df_path is the data file which contains the reslults of the LS
-    If savetext=False (default), this text file is not populated 
-    If savetext=True, the text file is populated in one of two ways:
-    * No frequency restriction -> frequency and power (2 columns)
-    * Frequency restriction -> frequency, power, restricted frequency and 
-    restructed power (4 columns) 
-    
-    If is_window is True (non-default), take the LS of the window function
-    
-    If renorm is True (non-default), every power p obtained from the LS is divided 
-    by the maximum power before plotting
-    
-    If poisson is True (default), a decaying exponential is fit to the local minima 
-    of the powers obtained from the LS, which is then used to correct all powers.
-    
-    If FALs is True (default), FALs are plotted in the background using the
-    probabilities listed in probs parameter. probs is an optional argument.
-    
-    Output: 
-    - Lomb-Scargle object and 4 lists: restricted frequency, error on restricted 
-    frequency, restricted power, and heights for FALs
-    ** All frequencies returned in Hz, NOT mHz 
+    If poisson is True (default), a decaying exponential is fit to the local 
+    minima of the powers obtained from the LS periodogram, which is then used 
+    to correct all powers.
     """
     
     from astropy.stats import LombScargle
     import matplotlib.pyplot as plt
     import numpy as np
 
-    #Acquire the data for the Lomb-Scargle periodogram
+    # acquire the data for the Lomb-Scargle (LS) periodogram
     tf = open(tf_path,"r")
     contents = tf.readlines()
     tf.close()
@@ -747,34 +847,41 @@ def QPO_detect(tf_path,output=-1,df_path=-1,minfreq=0,maxfreq=1,sinterms=1,
         photon.append(float(data[8]))
         photon_err.append(float(data[9]))
 
-    # Normalization of photon count with first count = 0
+    # normalization of photon count with first count = 0
     first_count = photon[0]
     photon_normed = [p - first_count for p in photon]
         
-    # Normalization of time with t1 = 0
+    # normalization of time with t1 = 0
     first_time = time[0]
     time_normed = [t - first_time for t in time]
     
-    # Edit the center data and fit mean depending on whether the data is to be viewed in window mode.
+    # edit the center data and fit mean depending on whether the data is to be 
+    # viewed in window mode (i.e., if the periodogram is to show the window 
+    # which is convoluted with the raw data )
     cd_opt = True
     fm_opt = True
-    if is_window is True:
+    if is_window:
         photon_normed = [1.0] * len(photon_normed)
         photon_err = None
         cd_opt = False
         fm_opt = False
-    # If fit_mean is true, then (from LS documentation):
+        
+    # if fit_mean is true, then (from LS documentation):
     # "Include a constant offset as part of the model at each frequency. 
-    # This can lead to more accurate results, especially in the case of incomplete phase coverage."
-    # If center_data is True, then (from LS documentation):
+    # This can lead to more accurate results, especially in the case of 
+    # incomplete phase coverage."
+    
+    # if center_data is True, then (from LS documentation):
     # "Pre-center the data by subtracting the weighted mean of the input data. 
     # This is especially important if fit_mean = False"
 
-    # Create the Lomb-Scargle object using autopower to generate a frequency sweep.
-    limbo = LombScargle(time_normed, photon_normed, photon_err,center_data=cd_opt,
-                        fit_mean=fm_opt,nterms=sinterms)    
+    # create the LS object using autopower to generate a frequency sweep
+    limbo = LombScargle(time_normed, photon_normed, photon_err,
+                        center_data=cd_opt, fit_mean=fm_opt,
+                        nterms=sinterms)    
     
-    # Determine the error on the general frequency sweep to use in the restricted frequencies error
+    # determine the error on the general frequency sweep to use in the 
+    # restricted frequencies error
     frequency, power = limbo.autopower(normalization=norm)
     frequency_rebin = np.histogram(frequency, len(time))[1].tolist()
     while (len(time) < len(frequency_rebin)):
@@ -787,74 +894,75 @@ def QPO_detect(tf_path,output=-1,df_path=-1,minfreq=0,maxfreq=1,sinterms=1,
     while (len(frequency) < len(frequency_err)):
         frequency_err.pop()
 
-    # Set the frequencies and powers using autopower to generate a restricted frequency sweep.
+    # set the frequencies and powers using autopower to generate a frequency
+    # sweep which is restricted to a given frequency interval 
     frequency_strict, power_strict = limbo.autopower(minimum_frequency=minfreq, 
                                                      maximum_frequency=maxfreq,
                                                      normalization=norm)
     
-    # Determine the error on the resticted frequencies sweeped
-    frequency_strict_rebin = np.histogram(frequency_strict, len(time))[1].tolist()
+    # determine the error on the resticted frequencies sweeped
+    frequency_strict_rebin = np.histogram(frequency_strict, 
+                                          len(time))[1].tolist()
     while (len(time) < len(frequency_strict_rebin)):
         frequency_strict_rebin.pop()
     frequency_strict_err = [0]
     for i in range(1, len(frequency_strict_rebin)): # start at 1 to avoid t=0
-        frequency_strict_err.append(frequency_strict_rebin[i]*time_err[i]/time[i])
+        frequency_strict_err.append(frequency_strict_rebin[i]*
+                                    time_err[i]/time[i])
     frequency_strict_err[0] = frequency_err[1]
-    frequency_strict_err = np.histogram(frequency_strict_err, len(frequency_strict))[1].tolist()
+    frequency_strict_err = np.histogram(frequency_strict_err, 
+                                        len(frequency_strict))[1].tolist()
     while (len(frequency_strict) < len(frequency_strict_err)):
         frequency_strict_err.pop()
     
-    # Enforce a renormalization of min power = 0, max power = 1 if desired
-    if renorm is True:
+    # enforce a renormalization of min power = 0, max power = 1 if desired
+    if renorm:
         m = max(power)
         power = [p/m for p in power]
         ms = max(power_strict)
         power_strict = [ps/ms for ps in power_strict]
         
-    # Create the plot if image is to be saved, with mHz frequency units.
-    # If FALs are to be added, calculate those and add to background. 
-    # If no output location is given, store as home/lomb_scargle.png
+    # create the plot if image is to be saved, with mHz frequency units.
+    # if FALs are to be added, calculate those and add to background. 
+    # if no output location is given, store as home/lomb_scargle.png
     frequency_strict_milli = [f*1000.0 for f in frequency_strict]
     frequency_strict_milli_err = [f*1000.0 for f in frequency_strict_err]
     
-    heights = limbo.false_alarm_level(probs) # moved outside conditional 
+    # compute false alarm probabilities 
+    heights = limbo.false_alarm_level(probs) 
     
-    if poisson is True:
-        power_strict = correct_poisson(frequency_strict_milli,power_strict,fit_lows=True)
-        if power_strict is None:
+    if poisson: # if we want to apply correction to Poisson noise 
+        power_strict = correct_poisson(frequency_strict_milli,
+                                       power_strict, fit_lows=True)
+        if not(power_strict): # if poisson corrections fails and returns None
             print("\nPoisson correction failed, breaking QPO detection.\n")
             return
         print("\nNote: FALs not plotted as Poisson noise is corrected for.\n")
         FALs = False
     
-    if (saveimage==True):
+    if saveimage: # if the image is to be saved 
         if output == -1:
             from os.path import expanduser
             output = expanduser("~")
             output = output+"lomb_scargle.png"
-        if (FALs==False):
+        if not FALs: # if false alarm probabilities should be plotted 
             plt.switch_backend('agg')
             fig, ax0  = plt.subplots(figsize=(6,2),nrows=1,sharex=False)
-            ax0.set_title('Lomb-Scargle Periodogram: 28 September 2018')#HERE
-            ax0.set_ylabel('Power')   
-            ax0.plot(frequency_strict_milli, power_strict, color=plotcolor) #mHz
-            ax0.set_xlabel('Frequency [mHz]')
-            plt.savefig(output,bbox_inches='tight')
         else:
-            #heights = limbo.false_alarm_level(probs) #moved outside conditonal
             plt.switch_backend('agg')
             fig, ax0  = plt.subplots(figsize=(6,2),nrows=1,sharex=False)
             for i in range(len(heights)):
                 ax0.axhline(y=heights[i],color='#d3d3d3')
-            ax0.plot(frequency_strict_milli, power_strict, color=plotcolor) #mHz
-            ax0.set_title('Lomb-Scargle Periodogram')
-            ax0.set_ylabel('Power')
-            ax0.set_xlabel('Frequency [mHz]')
-            plt.savefig(output,bbox_inches='tight')
+                            
+        ax0.plot(frequency_strict_milli, power_strict, color=plotcolor)#mHz
+        ax0.set_title(plottitle)
+        ax0.set_ylabel('Power')
+        ax0.set_xlabel('Frequency [mHz]')
+        plt.savefig(output,bbox_inches='tight')
             
-    # Create the text file if data is to be saved. 
-    # If no output location is given, store as home/lomb_scargle.txt
-    if (savetext == True):
+    # create the text file if data is to be saved. 
+    # if no output location is given, store as ~/lomb_scargle.txt
+    if savetext: # if we want to save the results to a text file
         if df_path == -1:
             from os.path import expanduser
             df_path = expanduser("~")
@@ -862,7 +970,8 @@ def QPO_detect(tf_path,output=-1,df_path=-1,minfreq=0,maxfreq=1,sinterms=1,
         df = open(df_path,'w+')
         for i in range(len(frequency)): #Hz
             if (i < len(frequency_strict)):
-                line = str(frequency[i])+"\t"+str(power[i])+"\t"+str(frequency_strict[i])+"\t"+str(power_strict[i])+"\n"
+                line = str(frequency[i])+"\t"+str(power[i])+"\t"
+                line += str(frequency_strict[i])+"\t"+str(power_strict[i])+"\n"
                 df.write(line)
             else:
                 line = str(frequency[i])+"\t"+str(power[i])+"\t \t \n"
@@ -870,63 +979,6 @@ def QPO_detect(tf_path,output=-1,df_path=-1,minfreq=0,maxfreq=1,sinterms=1,
         df.close()
                         
     return limbo, frequency_strict, frequency_strict_err, power_strict, heights
-
-def spinmob_fit(freq, freq_err, pows, num_peaks, width):
-    """
-    Input: the frequency, powers, and frequency errors output by QPO_detect, 
-    as well as the expected number of peaks to be fit and the estimated peak 
-    width (in mHz), assuming all peaks have about the same width. 
-    
-    Fit num_peaks Lorentzians to the periodogram. 
-    
-    *** Currently broken.  
-    """
-    import spinmob as s 
-    f = s.data.fitter() # create fitter object
-    
-    # fitting function and parameters
-    function = 'd +' # start with constant offset from power=0
-    parameters = 'd' # fit parameters
-    
-    # add a lorentzian for each expected peak
-    # lorentzian of form (g/2) / ((x-f0)**2 + (g/2)**2) 
-    # where g is the FWHM and f0 is the centre
-    for i in range(num_peaks):
-        function += ' (g%d/2)/((x-f%d)**2 + (g%d/2)**2)'%(i,i,i)
-        parameters += ',g%d,f%d'%(i,i)
-    f.set_functions(f=function,p=parameters)
-    
-    print(function)
-    print(parameters)
-    
-    # loading, setting data (where it currently breaks)
-    freq_mhz = [f*1000.0 for f in freq]
-    powers = pows.tolist()
-
-    f.set_data(xdata=freq_mhz,ydata=powers)
-    # says here that ndarray is not callable
-    # but freqs_mhz and powers are NOT ndarrays, they are lists (verified)
-       
-    print("(Single) click the estimated baseline.")
-    base_x, base_y = f.ginput()[0] # obtain the clicked (x,y)
-    
-    print("Next, (single) click the estimated centre of all 6 peaks, one at a time.")
-    click_x0, click_y0 = f.ginput()[0] # obtain the clicked (x,y)
-    click_x1, click_y1 = f.ginput()[0]
-    click_x2, click_y2 = f.ginput()[0]
-    click_x3, click_y3 = f.ginput()[0]
-    click_x4, click_y4 = f.ginput()[0]
-    click_x5, click_y5 = f.ginput()[0]
-    
-    # set guesses for fit parameters
-    f.set(d=base_y, f0=click_x0, f1=click_x1, f2=click_x2, 
-          f3=click_x3, f4=click_x4, f5=click_x5)
-    f.set(g0=width, g1=width, g2=width, g3=width, g4=width, g5=width)
-    f.set(xlabel='Frequency [Hz]', ylabel='Power')
-    
-    f.fit()
-    
-    print(f)
 
 def lorentz(x, *p):
     """
