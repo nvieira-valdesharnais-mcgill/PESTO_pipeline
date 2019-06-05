@@ -86,6 +86,6 @@ for filter_type in ['r','g','i','z']:
                      darkcor=iraf.no,   
                      flatcor=iraf.yes, 
                      fixpix=iraf.no,
-                     overscan=iraf.no,
-        imcombine('@object_list_'+filter_type+'.txt', # stacking 
-                       output='object_'+filter_type+'_reduced.fits')
+                     overscan=iraf.no)
+        imcombine('@object_list_'+filter_type+'.txt', 
+                  output='object_'+filter_type+'_reduced.fits')
