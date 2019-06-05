@@ -1,5 +1,5 @@
 """
-@authors: Andy Ramirez-Côté, Valérie Desharnais & Nicholas Vieira
+@authors: Andy Ramirez-Cote, Valerie Desharnais & Nicholas Vieira
 @datared.py
 
 Stack domeflats and apply this stack to correct individual object images. Then, 
