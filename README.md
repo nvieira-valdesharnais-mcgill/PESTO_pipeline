@@ -27,5 +27,5 @@ photutils: https://photutils.readthedocs.io/en/stable/install.html
 
 # How to use this software
 
-Documentation and a step-by-step guide on the use of this software can be seen here: https://github.com/nvieira-mcgill/cloud_killer/wiki
+Documentation and a step-by-step guide on the use of this software can be seen here: https://github.com/nvieira-valdesharnais-mcgill/PESTO_pipeline/wiki
 
