@@ -2,11 +2,12 @@
 @authors: Valérie Desharnais & Nicholas Vieira 
 @aperturephotometry.py
 
-Perform image segmentation to detect sources in the field and then search for a specific source. 
+Perform image segmentation to detect sources in the field and then search for 
+a specific source. 
 """
 
-
-def photometry(header, data, name, thresh_factor, RA_bound, DEC_bound, results_file, im=True):
+def photometry(header, data, name, thresh_factor, RA_bound, DEC_bound, 
+               results_file, im=True):
     """
     Input: the header of a reduced object's .fits file, the image data of the 
     file, the name to be used when creating the segmented image and a csv 
@@ -38,23 +39,31 @@ def photometry(header, data, name, thresh_factor, RA_bound, DEC_bound, results_f
     error on the photon count. If not, the flag NO SOURCE FOUND is appended to 
     the image. 
     """
-       
-    from astropy.stats import SigmaClip
+    
+    import numpy as np   
+    import numpy.ma as ma 
+    import os
+    from astropy.stats import (SigmaClip, gaussian_fwhm_to_sigma, 
+                               sigma_clipped_stats)
+    from astropy.convolution import Gaussian2DKernel
+    from astropy.table import Table, Column
+    from astroquery.vizier import Vizier
+    from astropy.coordinates import SkyCoord
+    import astropy.units as u
     from photutils import Background2D, MedianBackground
     from photutils.utils import calc_total_error
-    from astropy.convolution import Gaussian2DKernel
-    from astropy.stats import gaussian_fwhm_to_sigma 
     from photutils import detect_sources
     
     # perform 20 iterations of sigma clipping where needed 
     sigma_clip = SigmaClip(sigma=3.0, iters=20) 
     # background is estimated as the median of the entire image 
     bkg_estimator = MedianBackground() 
-    mask = (data == 0) # mask all pixels where the ADU is 0 
+    mask = (data == 0) # mask all pixels where the ADU is 0  
     bkg = Background2D(data, (50,50), filter_size=(3,3), sigma_clip=sigma_clip, 
                        bkg_estimator=bkg_estimator, mask=mask)
 
-    # find sources using image segmentation
+    ### find sources using image segmentation
+    
     # set the threshold for source detection 
     threshold = bkg.background + (thresh_factor*bkg.background_rms)
     sigma = 3.0*gaussian_fwhm_to_sigma
@@ -93,69 +102,165 @@ def photometry(header, data, name, thresh_factor, RA_bound, DEC_bound, results_f
     from astropy.wcs import WCS
     
     # calculate the error on the photon counts
-    tf = open('/data/irulan/omm_transients/'+results_file,'r')
-    contents = tf.readlines()
-    tf.close()
-    tf_last = contents[len(contents)-1]
-    tf_data = tf_last.split("\t")  
-    # gain*exposure*stack: 
-    effective_gain = 13.522*(float(tf_data[1])/1000.0)*float(tf_data[0])  
+#    tf = open('/data/irulan/omm_transients/'+results_file,'r')
+#    contents = tf.readlines()
+#    tf.close()
+#    tf_last = contents[len(contents)-1]
+#    tf_data = tf_last.split("\t")  
+#    # gain*exposure*stack: 
+#    effective_gain = 13.522*(float(tf_data[1])/1000.0)*float(tf_data[0])  
+    effective_gain = 13.522
     # compute photon count error :
     error = calc_total_error(data, bkg.background_rms, effective_gain) 
     
     cat = source_properties(data-bkg.background, segm, wcs='all_pix2world', 
                             error=error)
-    tbl = cat.to_table() # contruct a table of source properties 
+    segm_tbl = cat.to_table() # contruct a table of source properties 
     
     # WCS object
-    coord = WCS(header)
-    # get WCS of all sources 
-    xposition, yposition = coord.all_pix2world(tbl['xcentroid'], 
-                                               tbl['ycentroid'],1)
-    tbl['xcentroid'] = xposition
-    tbl['ycentroid'] = yposition
-    tbl.write('source_table_'+name+'.csv', format = 'csv', overwrite=True)
+    w = WCS(header)
+    # get WCS of all sources, add to segm_tbl, and write the table
+    ra, dec = w.all_pix2world(segm_tbl['xcentroid'], segm_tbl['ycentroid'],1)
+    segm_tbl["ra"] = ra
+    segm_tbl["dec"] = dec
+    segm_tbl.write('segmentation_table_'+name+'.csv', format = 'csv', 
+              overwrite=True)
+    
+    # build a new table with only the parameters we care about 
+    tbl = Table()
+    tbl["id"] = segm_tbl["id"] # id 
+    tbl["xcentroid"] = segm_tbl["xcentroid"] # x coord
+    tbl["ycentroid"] = segm_tbl["ycentroid"] # y coord 
+    tbl["area"] = segm_tbl["area"] # area in pixels
+    tbl["ra"] = ra # ra 
+    tbl["dec"] = dec # dec
+    tbl["pc"] = segm_tbl["source_sum"] # flux 
+    tbl["pc_err"] = segm_tbl["source_sum_err"] # error on flux 
+    tbl["mag_fit"] = -2.5*np.log10(tbl["pc"]) # instrumental magnitude
+    tbl["mag_fit_unc"] = 2.5/(tbl["pc"]*np.log(10)) # error on magnitude 
+    
+    ### query Vizier to match sources and do aperture photometry
+    
+    # set the catalogue and filter of the image
+    ref_catalog = "II/349/ps1"
+    ref_catalog_name = "PS1" # PanStarrs 1
+    filt = header["filtre"][0]
+    # get the centre of the image and its RA, Dec
+    x_size = data.shape[1]
+    y_size = data.shape[0]
+    ra_centre, dec_centre = np.array(w.all_pix2world(x_size/2.0, 
+                                                     y_size/2.0, 1))
+    # set radius to search in, minimum, maximum magnitudes
+    minmag = 10.0
+    maxmag = 22.0 
+    max_emag = 0.3 # maximum error on magnitude 
+    pixscale = np.mean(np.abs([header["CDELT1"], header["CDELT2"]])) # in deg
+    pixscale = pixscale*3600.0 # in arcsec
+    radius = pixscale*y_size/60.0 # radius in arcmin 
+    
+    # query print statement
+    #print('Querying Vizier %s around RA %.4f, Dec %.4f with a radius of %.4f arcmin\n'%(
+    #        ref_catalog, ra_centre, dec_centre, radius))
+    
+    # querying 
+    v = Vizier(columns=["*"], column_filters={
+            filt+"mag":str(minmag)+".."+str(maxmag),
+            "e_"+filt+"mag":"<"+str(max_emag)}, row_limit=-1) # no row limit
+    
+    Q = v.query_region(SkyCoord(ra=ra_centre, dec=dec_centre, 
+                    unit = (u.deg, u.deg)), radius = str(radius)+'m', 
+                    catalog=ref_catalog, cache=False)
+    cat_coords = w.all_world2pix(Q[0]['RAJ2000'], Q[0]['DEJ2000'], 1)
+    # mask out edge sources
+    x_lims = [int(0.05*x_size), int(0.95*x_size)] 
+    y_lims = [int(0.05*y_size), int(0.95*y_size)]
+    mask = (cat_coords[0] > x_lims[0]) & (
+            cat_coords[0] < x_lims[1]) & (
+            cat_coords[1] > y_lims[0]) & (
+            cat_coords[1] < y_lims[1])
+    good_cat_sources = Q[0][mask] # sources in catalogue 
+    
+    # cross-matching coords of sources found by astrometry
+    source_coords = SkyCoord(ra=tbl['ra'], dec=tbl['dec'], frame='fk5', 
+                             unit='degree')
+    # and coords of valid sources in the queried catalog 
+    cat_source_coords = SkyCoord(ra=good_cat_sources['RAJ2000'], 
+                                     dec=good_cat_sources['DEJ2000'], 
+                                     frame='fk5', unit='degree')
+        
+    # indices of matching sources (within 5.0 pix of each other) 
+    idx_image, idx_cat, d2d, d3d = cat_source_coords.search_around_sky(
+            source_coords, 5.0*pixscale*u.arcsec)
+    
+    # compute magnitude offsets and zero point
+    mag_offsets = ma.array(good_cat_sources[filt+'mag'][idx_cat] - 
+                      tbl['mag_fit'][idx_image])
+    zp_mean, zp_med, zp_std = sigma_clipped_stats(mag_offsets) # zero point
+    
+    mag_calib = tbl['mag_fit'] + zp_mean # compute magnitudes 
+    mag_calib.name = 'mag_calib'
+    mag_calib_unc = np.sqrt(tbl['mag_fit_unc']**2 + zp_std**2) # propagate errs
+    mag_calib_unc.name = 'mag_calib_unc'
+    tbl['mag_calib'] = mag_calib
+    tbl['mag_calib_unc'] = mag_calib_unc
+    
+    #print(zp_mean)
+    #print(zp_std)
+    
+    # add flag indicating if source is in catalog
+    #in_cat = []
+    #for i in range(len(tbl)):
+    #    if i in idx_image:
+    #        in_cat.append(True)
+    #    else:
+    #        in_cat.append(False)
+    #in_cat_col = Column(data=in_cat, name="in "+ref_catalog_name)
+    #tbl["in "+ref_catalog_name] = in_cat_col
+    
+    #return tbl
 
     # boundaries on the desired source
-    RA_min = RA_bound[0]
-    RA_max = RA_bound[1]
-    DEC_min = DEC_bound[0]
-    DEC_max = DEC_bound[1] 
+    RA_min, RA_max = RA_bound
+    DEC_min, DEC_max = DEC_bound
 
-    # parse a list of all sources for a source within the RA, Dec bounds 
+    # parse a list of all sources for a source within the RA, Dec bounds
+    cwd = os.getcwd() # current working dir
     for i in range(len(tbl['id'])):
         # if source is found:
-        if (RA_min <= tbl[i]['xcentroid'] <= RA_max) and (
-                DEC_min <= tbl[i]['ycentroid'] <= DEC_max):                      
+        if (RA_min <= tbl[i]['ra'] <= RA_max) and (
+                DEC_min <= tbl[i]['dec'] <= DEC_max):                      
             print("\nFound a source.\n")
 
-            # write lower left x and y bounds, the pixel area of the source, 
-            # the photon count, and the  photon count error to the results file
-            import pandas as pd
-            csv_file = pd.read_csv('source_table_'+name+'.csv') # read
-            # if x_min and y_min change drastically from one stack to another, 
-            # the sources are not the same or astrometric calibration failed
-            x_min = csv_file.iloc[i,10] 
-            y_min = csv_file.iloc[i,12] #
-            pc = csv_file.iloc[i,5]
-            pc_err = csv_file.iloc[i,6] 
-            area = csv_file.iloc[i,20]
+            # Write xcentroid and ycentroid, the pixel area of the source, 
+            # the photon count, photon count error, calibrated magnitude, 
+            # calibrated magnitude error, and filter used to the file.
+            # If xcentroid and ycentroid change drastically from one stack to 
+            # another, the sources are not the same or astrometric calibration 
+            # may have failed. 
+            xcentroid = tbl["xcentroid"].data[i]
+            ycentroid = tbl["ycentroid"].data[i]
+            area = tbl["area"].data[i]
+            pc = tbl["pc"].data[i]
+            pc_err = tbl["pc_err"].data[i] 
+            mag = tbl["mag_calib"].data[i]
+            mag_err = tbl["mag_calib_unc"][i]
             # line to write to the file: 
-            line = str(x_min)+"\t"+str(y_min)+"\t"+str(area)+"\t"+str(pc)
-            line += "\t"+str(pc_err)+"\n" 
-            tf = open('/data/irulan/omm_transients/'+results_file,'a')
+            line = str(xcentroid)+"\t"+str(ycentroid)+"\t"+str(area)
+            line += "\t"+str(pc)+"\t"+str(pc_err) 
+            line += "\t"+str(mag)+"\t"+str(mag_err)+"\t"+filt+"\n"
+            tf = open(cwd+"/"+results_file,'a')
             tf.write(line)
             tf.close()
-            return None
+            return tbl
 
     # if no source is found:
     line = "NO SOURCE FOUND.\n" 
     print("No source found.\n")
-    tf = open('/data/irulan/omm_transients/'+results_file,'a')
+    tf = open(cwd+"/"+results_file,'a')
     tf.write(line)
     tf.close()
 
-    return None
+    return tbl
 
 
 
