@@ -63,7 +63,7 @@ def photometry(header, data, name, thresh_factor, RA_bound, DEC_bound,
                        bkg_estimator=bkg_estimator, mask=mask)
 
     ### find sources using image segmentation
-    
+
     # set the threshold for source detection 
     threshold = bkg.background + (thresh_factor*bkg.background_rms)
     sigma = 3.0*gaussian_fwhm_to_sigma

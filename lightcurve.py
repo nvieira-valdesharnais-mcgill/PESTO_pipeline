@@ -100,7 +100,8 @@ def set_initial_time_zero(tf_path,output_path):
         time=float(data[3])-initial_time
         new_line = data[0]+"\t"+data[1]+"\t"+data[2]+"\t"
         new_line += str(time)+"\t"+data[4]+"\t"+data[5]+"\t"+data[6]+"\t"
-        new_line += data[7]+"\t"+data[8]+"\t"+data[9]#+"\n"
+        new_line += data[7]+"\t"+data[8]+"\t"+data[9]+"\t"+data[10]+"\t"
+        new_line += data[11]+"\t"+data[12]#+"\n"
         output = open(output_path,"a")
         output.write(new_line)
         output.close()
@@ -127,7 +128,8 @@ def correct_day_transition(tf_path,output_path,lower_limit=200,
         data = line.split("\t")
         times.append(float(data[3]))
         start = data[0]+"\t"+data[1]+"\t"+data[2]
-        end = data[4]+"\t"+data[5]+"\t"+data[6]+"\t"+data[7]+"\t"+data[8]+"\t"+data[9] 
+        end = data[4]+"\t"+data[5]+"\t"+data[6]+"\t"+data[7]+"\t"+data[8]+"\t"
+        end += data[9]+"\t"+data[10]+"\t"+data[11]+"\t"+data[12]
         starts.append(start)
         ends.append(end)
         
@@ -239,7 +241,8 @@ def correct_outliers(tf_path,output_path,sig=3.0):
     output.close() 
     counter = 0
     for i in range(len(photon_counts)-1):
-        if photon_count_differences[i] > lower_lim and photon_count_differences[i] < upper_lim:
+        if (photon_count_differences[i] > lower_lim) and (
+                photon_count_differences[i] < upper_lim):
             output = open(output_path,"a")
             output.write(contents[i+1])
             output.close()
@@ -288,7 +291,7 @@ def smooth(tf_path,output_path=-1,threshold=-1,factor=1.025):
     tf = open(tf_path,"r")
     contents = tf.readlines()
     tf.close()
-    d0,d1,d2,d3,d4,d5,d6,d7,d8,d9 = ([] for i in range(10))
+    d0,d1,d2,d3,d4,d5,d6,d7,d8,d9, d10, d11, d12 = ([] for i in range(10))
     for line in contents:
         data = line.split("\t")
         d0.append(float(data[0]))
@@ -301,9 +304,13 @@ def smooth(tf_path,output_path=-1,threshold=-1,factor=1.025):
         d7.append(float(data[7]))
         d8.append(float(data[8]))
         d9.append(float(data[9]))
+        d10.append(float(data[10]))
+        d11.append(float(data[11]))
+        d12.append(data[12])
 
     # naively smoothing the data by averaging the predecessor, bin and succesor  
-    nsd0,nsd1,nsd2,nsd3,nsd4,nsd5,nsd6,nsd7,nsd8,nsd9 = ([] for i in range(10))
+    nsd0,nsd1,nsd2,nsd3,nsd4,nsd5,nsd6,nsd7,nsd8,nsd9,nsd10,nsd11,nsd12 = (
+            [] for i in range(10))
     for i in range(len(d0)-2):
         nsd0.append((d0[i]+d0[i+1]+d0[i+2])/3.0)
         nsd1.append((d1[i]+d1[i+1]+d1[i+2])/3.0)
@@ -315,6 +322,9 @@ def smooth(tf_path,output_path=-1,threshold=-1,factor=1.025):
         nsd7.append((d7[i]+d7[i+1]+d7[i+2])/3.0)
         nsd8.append((d8[i]+d8[i+1]+d8[i+2])/3.0)
         nsd9.append((d9[i]+d9[i+1]+d9[i+2])/3.0)
+        nsd10.append((d10[i]+d10[i+1]+d10[i+2])/3.0)
+        nsd11.append((d11[i]+d11[i+1]+d11[i+2])/3.0)
+        nsd12.append(d12[i])
         
     # acquiring the time differences between each pair of smoothed data points    
     t_dif = []
@@ -345,7 +355,8 @@ def smooth(tf_path,output_path=-1,threshold=-1,factor=1.025):
             output_path = output_path+"smooth.txt"
     line = str(nsd0[0])+"\t"+str(nsd1[0])+"\t"+str(nsd2[0])+"\t"+str(nsd3[0])
     line += "\t"+str(nsd4[0])+"\t"+str(nsd5[0])+"\t"+str(nsd6[0])+"\t"
-    line += str(nsd7[0])+"\t"+str(nsd8[0])+"\t"+str(nsd9[0])+"\n"
+    line += str(nsd7[0])+"\t"+str(nsd8[0])+"\t"+str(nsd9[0])+"\t"
+    line += str(nsd10[0])+"\t"+str(nsd11[0])+"\t"+nsd12[0]+"\n"
     output = open(output_path,"a")
     output.write(line)
     output.close() 
@@ -357,7 +368,8 @@ def smooth(tf_path,output_path=-1,threshold=-1,factor=1.025):
             line = str(nsd0[i+1])+"\t"+str(nsd1[i+1])+"\t"+str(nsd2[i+1])+"\t"
             line += str(nsd3[i+1])+"\t"+str(nsd4[i+1])+"\t"+str(nsd5[i+1])+"\t"
             line += str(nsd6[i+1])+"\t"+str(nsd7[i+1])+"\t"+str(nsd8[i+1])+"\t"
-            line += str(nsd9[i+1])+"\n"
+            line += str(nsd9[i+1])+"\t"+str(nsd10[i+1])+"\t"+str(nsd11[i+1])
+            line += "\t"+nsd12[0]+"\n"
             output.write(line)
             output.close()            
     print("The original file contained "+str(len(d0))+
