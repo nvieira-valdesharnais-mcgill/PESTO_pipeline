@@ -11,7 +11,8 @@ curves.
 Input result files should contains rows of 10 tab-delimited entries as follows:
     
 <stack size> <exposure> <exposure error> <time> <time error> ...
-<x centroid minima> <y centroid minima> <pix source area> <flux> <flux error>
+<x centroid> <y centroid> <pix source area> <flux> <flux error> <magnitude> 
+<magnitude error> <filter>
 
 Without the ... and < >, of course.
 """
@@ -44,8 +45,7 @@ def clean_broken_lines(tf_path,output_path):
     """
     Input: a path to the data file to clean up and an output path
     Output: None 
-    Removes any lines from the data file which do not contain exactly 
-    10 entries. 
+    Removes any lines from the data file which do not contain 13 or 14 entries. 
     """
     tf = open(tf_path,"r")
     contents = tf.readlines()
@@ -53,7 +53,7 @@ def clean_broken_lines(tf_path,output_path):
     for line in contents:
         data=line.split("\t")
         #print(len(data))
-        if len(data) > 9 and len(data) < 12:
+        if len(data) > 12 and len(data) < 15:
             output = open(output_path,"a")
             output.write(line)
             output.close()
