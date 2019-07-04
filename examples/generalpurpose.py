@@ -1,66 +1,46 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-@authors: Nicholas Vieira & Valérie Desharnais
-@maxi.py
+Created on Thu Jul  4 15:21:54 2019
 
-This script was used specifically to pipe data on the transient binary black 
-hole system MAXI J1820+070 in 2018 and 2019. It was used on the irulan server 
-of the physics department of McGill University. It allowed the users to obtain 
-lightcurves of this object using either stacks of 100 or 1000 images for 
-several different epochs. 
-
-The script runs for either 100 stacks (iters) of 100 images or 10 stacks 
-(iters) of 1000 images. A similar script which can be run indefinitely (until 
-forced to stop), maxi_overnight.py, was also used. 
-
-This script was designed specifically to work with the source MAXIJ1820+070, 
-but serves as an example for writing your own scripts to automate the process. 
+@author: nvieira
 """
-
 import PESTO_lib 
 import subprocess
+import re
 
 whichdate = 'x'
 file = 'x'
 stack = 'x'
 
-while not(whichdate in ['180709','180928','190312','190317','190318', '190326', '190404']):
-    whichdate = input("Which date do you want? Enter 180709, 180928, 190312, 190317, 190318, 190326 or 190404 \n> ")
-while not (stack in ['100', '1000', '3000']):
-    stack = input("\nWhich is the stack size? Pick 100, 1000 or 3000\n> ")
+while not(whichdate in ['180709','180928','190312','190317','190318', 
+                        '190326', '190404']):
+    whichdate = input("Which date do you want? Enter 180709, 180928, "+
+                      "190312, 190317, 190318, 190326 or 190404 \n> ")
 while (file == 'x'):
-    file = input("\nWhat is the integer starting point? Pick using the table below:\n\
-    +--------+------------+----------+\n\
-    | Date   | Stack size | Range    |\n\
-    +--------+------------+----------+\n\
-    | 180709 | 100        | 1070-5284|\n\
-    +        +------------+----------+\n\
-    |        | 1000/3000  | 107-527  |\n\
-    +--------+------------+----------+\n\
-    | 180928 | 100        | 310-4634 |\n\
-    +        +------------+----------+\n\
-    |        | 1000/3000  | 31-462   |\n\
-    +--------+------------+----------+\n\
-    | 190312 | 100        | 83-2560  |\n\
-    +        +------------+----------+\n\
-    |        | 1000/3000  | 9-255    |\n\
-    +--------+------------+----------+\n\
-    | 190317 | 100        | 428-5840 |\n\
-    +        +------------+----------+\n\
-    |        | 1000/3000  | 43-584   |\n\
-    +--------+------------+----------+\n\
-    | 190318 | 100        | 99-5659  |\n\
-    +        +------------+----------+\n\
-    |        | 1000/3000  | 9-565    |\n\
-    +--------+------------+----------+\n\
-    | 190326 | 100        | 220-4373 |\n\
-    +        +------------+----------+\n\
-    |        | 1000/3000  | 22-437   |\n\
-    +--------+------------+----------+\n\
-    | 190404 | 100        | 83-6134  |\n\
-    +        +------------+----------+\n\
-    |        | 1000/3000  | 8-613    |\n\
-    +--------+------------+----------+\n\n> ")
+    file = input("\nWhat is the integer starting point? Pick using the "+
+                 "table below:\n\
+    +----------+--------+--------+\n\
+    | JULY 09  |  96931 | 528554 |\n\
+    +----------+--------+--------+\n\
+    | SEPT 28  |  30054 | 463776 |\n\
+    +----------+--------+--------+\n\
+    | MARCH 12 |   8241 | 334055 |\n\
+    +----------+--------+--------+\n\
+    | MARCH 17 |  42805 | 584457 |\n\
+    +----------+--------+--------+\n\
+    | MARCH 18 |   9878 | 565912 |\n\
+    +----------+--------+--------+\n\
+    | MARCH 26 |   2200 | 437399 |\n\
+    +----------+--------+--------+\n\
+    | APRIL 04 |   8235 | 613404 |\n\
+    +----------+--------+--------+\n\n> ")                 
+    
+stack = int(input("\nWhat is the stack size? \n> "))
 
+file = re.sub(whichdate+"*_", "", file) # get rid of date at filname start
+#while file[0] == "0":
+#    file = file[1:] # get rid of unecessary leading 0s
 file_num = int(file)
 
 name = "mini_reduced_data" 
@@ -74,54 +54,62 @@ name = "mini_reduced_data"
 # MARCH 26: 002200 to 437399
 # APRIL 04: 008235 to 613404
 
+
 if whichdate == '180709':
     location = ["/exports/scratch/MAXIJ1820/180709_works","/exports/scratch/MAXIJ1820/180709_calibs"] 
-    bash_copy_start = "cp /data/irulan/omm_transients/MAXIJ1820/180709/Target/MAXIJ1820+070/180709_0000"
-    bash_copy_end = "* /exports/scratch/MAXIJ1820/180709_works/"
+    bash_copy_start = "cp /data/irulan/omm_transients/MAXIJ1820/180709/Target/MAXIJ1820+070/180709"
+    bash_copy_end = " /exports/scratch/MAXIJ1820/180709_works/"
     bash_empty = "rm -rf /exports/scratch/MAXIJ1820/180709_works/*"
-    bash_gunzip = "gunzip /exports/scratch/MAXIJ1820/180709_works/*"
+    bash_gunzip = "gunzip /exports/scratch/MAXIJ1820/180709_works/*.fits.gz"
+    limit = 528554
 elif whichdate == '180928':
     location = ["/exports/scratch/MAXIJ1820/180928_works","/exports/scratch/MAXIJ1820/180928_calibs"] 
-    bash_copy_start = "cp /exports/scratch/MAXIJ1820/180928/MAXI1820+070-180928-OMM/Target/180928_0000"
-    bash_copy_end = "* /exports/scratch/MAXIJ1820/180928_works/"
+    bash_copy_start = "cp /exports/scratch/MAXIJ1820/180928/MAXI1820+070-180928-OMM/Target/180928"
+    bash_copy_end = " /exports/scratch/MAXIJ1820/180928_works/"
     bash_empty = "rm -rf /exports/scratch/MAXIJ1820/180928_works/*"
-    bash_gunzip = "gunzip /exports/scratch/MAXIJ1820/180928_works/*"
+    bash_gunzip = "gunzip /exports/scratch/MAXIJ1820/180928_works/*.fits.gz"
+    limit = 463776
 elif whichdate == '190312':
     location = ["/exports/scratch/MAXIJ1820/190312_works","/exports/scratch/MAXIJ1820/190312_calibs"] 
-    bash_copy_start = "cp /data/irulan/omm_transients/MAXIJ1820/190312/MAXIJ1820+070/190312_0000"
-    bash_copy_end = "* /exports/scratch/MAXIJ1820/190312_works/"
+    bash_copy_start = "cp /data/irulan/omm_transients/MAXIJ1820/190312/MAXIJ1820+070/190312"
+    bash_copy_end = " /exports/scratch/MAXIJ1820/190312_works/"
     bash_empty = "rm -rf /exports/scratch/MAXIJ1820/190312_works/*"
-    bash_gunzip = "gunzip /exports/scratch/MAXIJ1820/190312_works/*"
+    bash_gunzip = "gunzip /exports/scratch/MAXIJ1820/190312_works/*.fits.gz"
+    limit = 334055
 elif whichdate == '190317':
     location = ["/exports/scratch/MAXIJ1820/190317_works","/exports/scratch/MAXIJ1820/190317_calibs"] 
-    bash_copy_start = "cp /data/irulan/omm_transients/MAXIJ1820/190317/MAXIJ1820+070/190317_0000"
-    bash_copy_end = "* /exports/scratch/MAXIJ1820/190317_works/"
+    bash_copy_start = "cp /data/irulan/omm_transients/MAXIJ1820/190317/MAXIJ1820+070/190317"
+    bash_copy_end = " /exports/scratch/MAXIJ1820/190317_works/"
     bash_empty = "rm -rf /exports/scratch/MAXIJ1820/190317_works/*"
-    bash_gunzip = "gunzip /exports/scratch/MAXIJ1820/190317_works/*"
+    bash_gunzip = "gunzip /exports/scratch/MAXIJ1820/190317_works/*.fits.gz"
+    limit = 584457
 elif whichdate == '190318':
     location = ["/exports/scratch/MAXIJ1820/190318_works","/exports/scratch/MAXIJ1820/190318_calibs"] 
     bash_copy_start = "cp /data/irulan/omm_transients/MAXIJ1820/190318/MAXIJ1820+070/190318_0000"
-    bash_copy_end = "* /exports/scratch/MAXIJ1820/190318_works/"
+    bash_copy_end = " /exports/scratch/MAXIJ1820/190318_works/"
     bash_empty = "rm -rf /exports/scratch/MAXIJ1820/190318_works/*"
-    bash_gunzip = "gunzip /exports/scratch/MAXIJ1820/190318_works/*"
+    bash_gunzip = "gunzip /exports/scratch/MAXIJ1820/190318_works/*.fits.gz"
+    limit = 565912
 elif whichdate == '190326':
     location = ["/exports/scratch/MAXIJ1820/190326_works","/exports/scratch/MAXIJ1820/190326_calibs"] 
-    bash_copy_start = "cp /data/irulan/omm_transients/MAXIJ1820/190326/MAXIJ1820+070/190326_0000"
-    bash_copy_end = "* /exports/scratch/MAXIJ1820/190326_works/"
+    bash_copy_start = "cp /data/irulan/omm_transients/MAXIJ1820/190326/MAXIJ1820+070/190326"
+    bash_copy_end = " /exports/scratch/MAXIJ1820/190326_works/"
     bash_empty = "rm -rf /exports/scratch/MAXIJ1820/190326_works/*"
-    bash_gunzip = "gunzip /exports/scratch/MAXIJ1820/190326_works/*"
+    bash_gunzip = "gunzip /exports/scratch/MAXIJ1820/190326_works/*.fits.gz"
+    limit = 437399
 elif whichdate == '190404':
     location = ["/exports/scratch/MAXIJ1820/190404_works","/exports/scratch/MAXIJ1820/190404_calibs"] 
-    bash_copy_start = "cp /data/irulan/omm_transients/MAXIJ1820/190404/MAXIJ1820+070/190404_0000"
-    bash_copy_end = "* /exports/scratch/MAXIJ1820/190404_works/"
+    bash_copy_start = "cp /data/irulan/omm_transients/MAXIJ1820/190404/MAXIJ1820+070/190404"
+    bash_copy_end = " /exports/scratch/MAXIJ1820/190404_works/"
     bash_empty = "rm -rf /exports/scratch/MAXIJ1820/190404_works/*"
-    bash_gunzip = "gunzip /exports/scratch/MAXIJ1820/190404_works/*"
+    bash_gunzip = "gunzip /exports/scratch/MAXIJ1820/190404_works/*.fits.gz"
+    limit = 613404
 
-og_file_num = file_num
 target = "/exports/scratch/MAXIJ1820"
-type = ["object","calibration"]
+imtype = ["object","calibration"]
 
-# Here, select the RA and DEC bounds, depending on whether we're looking at MAXI or an alt source
+# Here, select the RA and DEC bounds, depending on whether we're looking at 
+# MAXI or an alt source
 # Uncomment the arrays which you want to use
 
 # FOR MAXI
@@ -153,28 +141,22 @@ DEC = [7.184, 7.187]
 #RA = [275.072, 275.074]
 #DEC = [7.199, 7.201]
 
-if (int(stack) == 100):   # if making stacks of 100
-    file_iters  = 100     # 100 iterations
-    file_lim1 = 100      
-    file_lim2 = 1000      
-elif (int(stack) == 1000): # if making stacks of 1000 or 3000
-    file_iters  = 10      # 10 iterations
-    file_lim1 = 10
-    file_lim2 = 100 
+start = file_num
+end = start+stack
 
-while(file_num < og_file_num+file_iters): 
-    if file_num < file_lim1:  # check if file is less than ...10000.fits
-        bash_copy = bash_copy_start+"00"+str(file_num)+bash_copy_end
-    elif file_num < file_lim2: # check if file is less than ..100000.fits
-        bash_copy = bash_copy_start+"0"+str(file_num)+bash_copy_end
-    else:
-        bash_copy = bash_copy_start+str(file_num)+bash_copy_end 
+while start+stack < limit: # will run until it can't anymore 
     subprocess.run(bash_empty,shell=True)
-    subprocess.run(bash_copy,shell=True)
+    i = start 
+    while i < end:     
+        cp_cmd = bash_copy_start+"*000"+str(i)+".fits* "+bash_copy_end
+        subprocess.run(cp_cmd, shell=True)
+        #print(i)
+        i += 1
+    
     subprocess.run(bash_gunzip,shell=True)
-    file_num = file_num+1
-
-    data = PESTO_lib.raw_PESTO_data(location,type,name,target) 
+    
+    # MAXI STUFF
+    data = PESTO_lib.raw_PESTO_data(location,imtype,name,target) 
     data.flush()
     data.produce_lists() 
     data.make_working_directory() 
@@ -225,4 +207,8 @@ while(file_num < og_file_num+file_iters):
         wcs_location = "/data/irulan/omm_transients/wcs_solutions/190404_soln.fits"    # new WCS technique
         reduced_data.WCS_merge(wcs_location)
         reduced_data.photometry(2.0, RA, DEC, "results_190404.txt")
+    
+    start = end # new beginning
+    end += stack # new end 
+    
 
