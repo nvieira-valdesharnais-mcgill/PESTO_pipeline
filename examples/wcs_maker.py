@@ -16,9 +16,14 @@ import PESTO_lib
 
 whichdate = 'x'
 
-while not(whichdate in ['190312','190317','190318', '190326', '190404']):
-    whichdate = input("What date do you want? Enter 190312, 190317, 190318, 190326 and 190404 \n> ") 
+while not(whichdate in ['180709','190312','190317','190318', '190326', '190404']):
+    whichdate = input("What date do you want? Enter 180709, 190312, 190317, 190318, 190326 and 190404 \n> ") 
 
+if (whichdate == '180709'):
+    location = ["/exports/scratch/MAXIJ1820/180709_fullframes",
+                "/exports/scratch/MAXIJ1820/180709_calibs"]
+    roi_x = [0.0,1024.0]
+    roi_y = [433.0, 530.0]
 if (whichdate == '190312'):
     location = ["/exports/scratch/MAXIJ1820/190312_fullframes",
                 "/exports/scratch/MAXIJ1820/190312_calibs"]
