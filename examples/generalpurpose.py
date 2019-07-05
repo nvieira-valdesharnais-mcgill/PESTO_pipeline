@@ -3,7 +3,9 @@
 """
 Created on Thu Jul  4 15:21:54 2019
 
-@author: nvieira
+@authors: Nicholas Vieira & Valérie Desharnais
+@generalpurpose.py
+
 """
 import PESTO_lib 
 import subprocess
