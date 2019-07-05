@@ -585,7 +585,7 @@ class reduced_PESTO_data(PESTO_data):
              hdu = fits.open(self.loc[0]+'/'+self.name+'/'+f)    
              aperturephotometry.photometry(hdu[0].header,
                                            hdu[0].data,f.replace('.fits', ''),
-                                           thresh_factor,RA_bounds, DEC_bounds,
+                                           RA_bounds, DEC_bounds, thresh_factor,
                                            results_file)
 
 ###############################################################################

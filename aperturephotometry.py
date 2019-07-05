@@ -6,7 +6,7 @@ Perform image segmentation to detect sources in the field and then search for
 a specific source. 
 """
 
-def photometry(header, data, name, thresh_factor, RA_bound, DEC_bound, 
+def photometry(header, data, name, RA_bound, DEC_bound, thresh_factor,
                results_file, im=True):
     """
     Input: the header of a reduced object's .fits file, the image data of the 
