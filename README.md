@@ -12,6 +12,8 @@ pyraf -- An industry standard tool for all sorts of astrophysical programming. U
 
 astrometry.net -- A tool for source detection and astrometric calibration of images (finding world coordinate system solutions).
 
+astroquery -- A tool for querying online catalogues. 
+
 photutils -- Software affiliated with astropy, used specifically for photometry. It's also recommended to download the whole thing. 
 
 # Where to get these modules
@@ -22,6 +24,8 @@ pyraf: http://www.stsci.edu/institute/software_hardware/pyraf (Installing this c
 If you have access to the irulan server of McGill University, iraf will already be installed. If your institution has a server dedicated to physics/astrophysics, it will probably already have iraf as well. 
 
 astrometry.net: http://astrometry.net/doc/readme.html#installing
+
+astroquery: https://astroquery.readthedocs.io/en/latest/#installation
 
 photutils: https://photutils.readthedocs.io/en/stable/install.html
 
